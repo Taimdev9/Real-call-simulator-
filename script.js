@@ -1,38 +1,30 @@
-let myId = "";
-let peer = null;
-let activeCall = null;
-let incomingCallObj = null;
-let localStream = null;
 let currentChatPeer = "";
+let localStream = null;
+let isMuted = false;
+let isCameraOff = false;
+let isSharingScreen = false;
 
-// تشغيل النظام عند التحميل
 window.onload = function() {
     let savedProfile = localStorage.getItem('user_profile');
     if(savedProfile) {
         document.getElementById('setupScreen').style.display = 'none';
         initAppEngine(JSON.parse(savedProfile));
     }
+    loadDynamicChats();
 }
 
-// إتمام الإعدادات الأولى المأخوذة من المستخدم
 function completeSetup() {
     let name = document.getElementById('inputName').value.trim();
     let theme = document.getElementById('selectTheme').value;
     let fileInput = document.getElementById('inputAvatarFile');
 
-    if(!name) {
-        alert('الرجاء إدخال الاسم.');
-        return;
-    }
+    if(!name) { alert('الرجاء إدخال الاسم.'); return; }
 
     if(fileInput.files && fileInput.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) {
-            saveAndBoot(name, e.target.result, theme);
-        };
+        reader.onload = function(e) { saveAndBoot(name, e.target.result, theme); };
         reader.readAsDataURL(fileInput.files[0]);
     } else {
-        // صورة افتراضية في حال لم يرفع صورة
         saveAndBoot(name, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde', theme);
     }
 }
@@ -49,26 +41,8 @@ function initAppEngine(profile) {
     document.getElementById('menuProfileName').innerText = profile.name;
     document.getElementById('menuProfileImg').src = profile.avatar;
     document.getElementById('myStoryImg').src = profile.avatar;
-
-    // توليد 5 أرقام فريدة للاتصال
-    myId = localStorage.getItem('my_peer_id');
-    if(!myId) {
-        myId = Math.floor(10000 + Math.random() * 90000).toString();
-        localStorage.setItem('my_peer_id', myId);
-    }
-    document.getElementById('myPeerIdDisplay').innerText = myId;
-
-    // تشغيل PeerJS
-    peer = new Peer("net_call_" + myId);
-    peer.on('call', (call) => {
-        incomingCallObj = call;
-        document.getElementById('incomingCallerText').innerText = "المتصل: " + call.peer.replace("net_call_", "");
-        document.getElementById('incomingModal').style.display = 'flex';
-        document.getElementById('ringtone').play().catch(e => console.log(e));
-    });
 }
 
-// تبديل التبويبات السفلية
 function switchTab(tab, btn) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -82,14 +56,40 @@ function toggleTheme() {
     let current = root.getAttribute('data-theme');
     let next = current === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
-    let profile = JSON.parse(localStorage.getItem('user_profile'));
-    if(profile) {
-        profile.theme = next;
-        localStorage.setItem('user_profile', JSON.stringify(profile));
-    }
+    let profile = JSON.parse(localStorage.getItem('user_profile')) || { name: "مستخدم", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde" };
+    profile.theme = next;
+    localStorage.setItem('user_profile', JSON.stringify(profile));
 }
 
-// محادثات وشات داخلي
+function addNewChatPrompt() {
+    let name = prompt('أدخل اسم الشخص للدردشة:');
+    if(!name) return;
+    let peerId = 'chat_' + Date.now();
+    let customChats = JSON.parse(localStorage.getItem('custom_chats') || '[]');
+    customChats.push({ name, peerId, avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde' });
+    localStorage.setItem('custom_chats', JSON.stringify(customChats));
+    loadDynamicChats();
+    openChat(name, 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde', peerId);
+}
+
+function loadDynamicChats() {
+    let list = document.getElementById('chatList');
+    let customChats = JSON.parse(localStorage.getItem('custom_chats') || '[]');
+    customChats.forEach(c => {
+        let div = document.createElement('div');
+        div.className = 'chat-item';
+        div.onclick = () => openChat(c.name, c.avatar, c.peerId);
+        div.innerHTML = `
+            <div class="avatar-wrap"><img src="${c.avatar}"></div>
+            <div class="chat-details">
+                <div class="chat-name">${c.name}</div>
+                <div class="chat-preview">انقر لبدء المحادثة...</div>
+            </div>
+        `;
+        list.prepend(div);
+    });
+}
+
 function openChat(name, avatar, peerCode) {
     currentChatPeer = peerCode;
     document.getElementById('roomName').innerText = name;
@@ -106,121 +106,78 @@ function sendMessage() {
     let input = document.getElementById('msgInput');
     let text = input.value.trim();
     if(!text) return;
-    appendMsgUI(text, 'msg-out');
-    saveMsgStore(currentChatPeer, text, 'msg-out');
+    appendMsgUI(text, 'msg-out', 'text');
+    saveMsgStore(currentChatPeer, text, 'msg-out', 'text');
     input.value = '';
+    
+    setTimeout(() => {
+        let reply = "أهلاً بك، تم استلام رسالتك!";
+        appendMsgUI(reply, 'msg-in', 'text');
+        saveMsgStore(currentChatPeer, reply, 'msg-in', 'text');
+    }, 1000);
+}
+
+function sendGalleryImage(input) {
+    if(input.files && input.files[0]) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let imgData = e.target.result;
+            appendMsgUI(imgData, 'msg-out', 'image');
+            saveMsgStore(currentChatPeer, imgData, 'msg-out', 'image');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
 }
 
 function handleKey(e) {
     if(e.key === 'Enter') sendMessage();
 }
 
-function appendMsgUI(text, type) {
+function appendMsgUI(content, type, dataType) {
     let box = document.getElementById('roomMessagesBox');
     let div = document.createElement('div');
     div.className = `msg-bubble ${type}`;
-    div.innerText = text;
+    if(dataType === 'image') {
+        div.innerHTML = `<img src="${content}" class="msg-img">`;
+    } else {
+        div.innerText = content;
+    }
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
 }
 
-function saveMsgStore(peerCode, text, type) {
-    let history = JSON.parse(localStorage.getItem('chat_' + peerCode) || '[]');
-    history.push({ text, type });
-    localStorage.setItem('chat_' + peerCode, JSON.stringify(history));
+function saveMsgStore(peerCode, content, type, dataType) {
+    let history = JSON.parse(localStorage.getItem('msg_history_' + peerCode) || '[]');
+    history.push({ content, type, dataType });
+    localStorage.setItem('msg_history_' + peerCode, JSON.stringify(history));
 }
 
 function loadMessages(peerCode) {
     let box = document.getElementById('roomMessagesBox');
     box.innerHTML = '';
-    let history = JSON.parse(localStorage.getItem('chat_' + peerCode) || '[]');
+    let history = JSON.parse(localStorage.getItem('msg_history_' + peerCode) || '[]');
     if(history.length === 0) {
-        appendMsgUI('مرحباً بك في المحادثة المباشرة.', 'msg-in');
+        appendMsgUI('بدء محادثة آمنة.', 'msg-in', 'text');
     } else {
-        history.forEach(m => appendMsgUI(m.text, m.type));
+        history.forEach(m => appendMsgUI(m.content, m.type, m.dataType));
     }
 }
 
-// الاتصال المرئي
-async function startCall() {
-    let target = document.getElementById('targetIdInput').value.trim();
-    if(target.length !== 5) {
-        alert('أدخل رقم مكون من 5 خانات');
-        return;
-    }
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('localVideo').srcObject = localStream;
-        let call = peer.call("net_call_" + target, localStream);
-        setupCall(call);
-    } catch(e) {
-        alert('فشل تشغيل الكاميرا والميكروفون');
-    }
-}
-
-function startCallFromRoom() {
-    if(currentChatPeer) {
-        document.getElementById('targetIdInput').value = currentChatPeer;
-        startCall();
-    }
-}
-
-function setupCall(call) {
-    activeCall = call;
-    document.getElementById('callScreen').style.display = 'flex';
-    call.on('stream', (stream) => {
-        document.getElementById('remoteVideo').srcObject = stream;
-    });
-    call.on('close', () => { endCall(); });
-}
-
-function acceptCall() {
-    document.getElementById('ringtone').pause();
-    document.getElementById('incomingModal').style.display = 'none';
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-        localStream = stream;
-        document.getElementById('localVideo').srcObject = stream;
-        incomingCallObj.answer(stream);
-        setupCall(incomingCallObj);
-    }).catch(e => alert('فشل الاتصال'));
-}
-
-function rejectCall() {
-    document.getElementById('ringtone').pause();
-    if(incomingCallObj) incomingCallObj.close();
-    document.getElementById('incomingModal').style.display = 'none';
-}
-
-function endCall() {
-    if(activeCall) activeCall.close();
-    if(localStream) {
-        localStream.getTracks().forEach(t => t.stop());
-    }
-    document.getElementById('callScreen').style.display = 'none';
-}
-
-function changeLanguage(lang) {
-    if(lang === 'en') {
-        document.getElementById('setupTitle').innerText = 'Personal Account Setup';
-        document.getElementById('lblName').innerText = 'Your Name:';
-        document.getElementById('lblAvatar').innerText = 'Profile Picture from phone:';
-        document.getElementById('lblTheme').innerText = 'Theme Mode:';
-        document.getElementById('btnStart').innerText = 'Get Started';
-        document.getElementById('headerTitle').innerText = 'Chats';
-        document.getElementById('navChat').innerText = 'Chats';
-        document.getElementById('navNotif').innerText = 'Notifications';
-        document.getElementById('navMenu').innerText = 'Menu';
-    } else {
-        document.getElementById('setupTitle').innerText = 'إعداد حسابك الشخصي';
-        document.getElementById('lblName').innerText = 'اسمك:';
-        document.getElementById('lblAvatar').innerText = 'صورة الحساب من هاتفك:';
-        document.getElementById('lblTheme').innerText = 'المظهر:';
-        document.getElementById('btnStart').innerText = 'بدء الاستخدام';
-        document.getElementById('headerTitle').innerText = 'الدردشات';
-        document.getElementById('navChat').innerText = 'الدردشات';
-        document.getElementById('navNotif').innerText = 'الإشعارات';
-        document.getElementById('navMenu').innerText = 'القائمة';
-    }
+function addMyStory() {
+    let input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = e => {
+        if(e.target.files && e.target.files[0]) {
+            let reader = new FileReader();
+            reader.onload = ev => {
+                document.getElementById('myStoryImg').src = ev.target.result;
+                alert('تمت إضافة القصة بنجاح من المعرض!');
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    };
+    input.click();
 }
 
 function filterChats(q) {
@@ -230,15 +187,133 @@ function filterChats(q) {
     });
 }
 
-function openStoryModal(imgUrl, name) {
-    alert('عرض قصة المستخدم: ' + name);
+// ---------------- ميزات الاتصال والفلاتر الجديدة ---------------- //
+
+async function startCall(type) {
+    document.getElementById('callScreen').style.display = 'flex';
+    document.getElementById('callStatusText').innerText = type === 'video' ? 'جاري اتصال الفيديو...' : 'جاري اتصال صوتي...';
+    
+    if(type === 'video') {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            let videoElem = document.getElementById('callVideoFeed');
+            videoElem.srcObject = localStream;
+            videoElem.style.display = 'block';
+        } catch(err) {
+            alert('تعذر فتح الكاميرا، يرجى السماح بالصلاحيات.');
+        }
+    } else {
+        document.getElementById('callVideoFeed').style.display = 'none';
+    }
 }
 
-function addMyStory() {
-    let url = prompt('أدخل رابط صورة لقصتك الجديدة:');
-    if(url) alert('تمت إضافة القصة بنجاح');
+function endCall() {
+    if(localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    document.getElementById('callScreen').style.display = 'none';
+    document.getElementById('filtersTray').style.display = 'none';
 }
 
-function openProfile() {
-    switchTab('menu', document.querySelectorAll('.nav-btn')[2]);
+function toggleMute() {
+    isMuted = !isMuted;
+    if(localStream) {
+        localStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
+    }
+    let btn = document.getElementById('btnToggleMute');
+    btn.classList.toggle('active-state', isMuted);
+    btn.innerHTML = isMuted ? '<i class="fa-solid fa-microphone-slash"></i>' : '<i class="fa-solid fa-microphone"></i>';
+}
+
+function toggleCamera() {
+    isCameraOff = !isCameraOff;
+    if(localStream) {
+        localStream.getVideoTracks().forEach(track => track.enabled = !isCameraOff);
+    }
+    let btn = document.getElementById('btnToggleCam');
+    btn.classList.toggle('active-state', isCameraOff);
+    btn.innerHTML = isCameraOff ? '<i class="fa-solid fa-video-slash"></i>' : '<i class="fa-solid fa-video"></i>';
+}
+
+async function toggleScreenShare() {
+    try {
+        if(!isSharingScreen) {
+            let screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            document.getElementById('callVideoFeed').srcObject = screenStream;
+            isSharingScreen = true;
+            document.getElementById('btnToggleShare').classList.add('active-state');
+        } else {
+            document.getElementById('callVideoFeed').srcObject = localStream;
+            isSharingScreen = false;
+            document.getElementById('btnToggleShare').classList.remove('active-state');
+        }
+    } catch(err) {
+        console.log("تم إلغاء مشاركة الشاشة");
+    }
+}
+
+function toggleFiltersTray() {
+    let tray = document.getElementById('filtersTray');
+    tray.style.display = tray.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function applyFilter(filterType, filterName) {
+    document.getElementById('activeFilterBadge').innerText = filterName;
+    document.querySelectorAll('.filter-item').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+
+    let bgLayer = document.getElementById('callBackgroundLayer');
+    let videoElem = document.getElementById('callVideoFeed');
+
+    // إعادة ضبط التأثيرات
+    videoElem.style.filter = 'none';
+    bgLayer.style.backgroundImage = 'none';
+
+    // تطبيق فلاتر الوجه أو الخلفيات الحقيقية من الهاتف
+    switch(filterType) {
+        case 'dog':
+            videoElem.style.filter = 'contrast(1.2) saturate(1.4) drop-shadow(0 0 10px gold)';
+            break;
+        case 'cat':
+            videoElem.style.filter = 'sepia(0.3) saturate(1.5)';
+            break;
+        case 'glasses':
+            videoElem.style.filter = 'grayscale(0.3) contrast(1.3)';
+            break;
+        case 'crown':
+            videoElem.style.filter = 'drop-shadow(0 0 15px yellow)';
+            break;
+        case 'heart':
+            videoElem.style.filter = 'hue-rotate(300deg) saturate(1.5)';
+            break;
+        case 'fire':
+            videoElem.style.filter = 'sepia(0.8) hue-rotate(-30deg) saturate(2)';
+            break;
+        case 'space':
+            bgLayer.style.backgroundImage = 'url("https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86")';
+            break;
+        case 'beach':
+            bgLayer.style.backgroundImage = 'url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e")';
+            break;
+        case 'blur':
+            videoElem.style.filter = 'blur(4px)';
+            break;
+        case 'neon':
+            videoElem.style.filter = 'invert(0.2) hue-rotate(90deg) saturate(3)';
+            break;
+        case 'anime':
+            videoElem.style.filter = 'brightness(1.2) contrast(1.1) saturate(1.8)';
+            break;
+        case 'retro':
+            videoElem.style.filter = 'sepia(0.6) contrast(1.2) blur(0.5px)';
+            break;
+        case 'matrix':
+            videoElem.style.filter = 'hue-rotate(90deg) grayscale(0.5) contrast(2)';
+            break;
+        case 'astronaut':
+            bgLayer.style.backgroundImage = 'url("https://images.unsplash.com/photo-1446776811953-b23d57bd21aa")';
+            break;
+        default:
+            break;
+    }
 }
