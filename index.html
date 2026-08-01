@@ -3,52 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة الاتصالات والدردشة الافتراضية</title>
-    <!-- مكتبة PeerJS للاتصال المباشر -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- FontAwesome للأيقونات -->
+    <title>Messenger Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- ملف التصميم الخارجي -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- 1. شاشة البداية الأولى (Setup Screen) -->
+    <!-- شاشة الإعدادات الأولى -->
     <div id="setupScreen" class="setup-overlay">
         <div class="setup-card">
-            <h2 id="setupTitle">إعداد حسابك الشخصي</h2>
-            
-            <label id="lblLang">اختر اللغة / Select Language:</label>
-            <select id="selectLang" onchange="changeLanguage(this.value)">
-                <option value="ar">العربية (Arabic)</option>
-                <option value="en">English (إنجليزي)</option>
-            </select>
-
-            <label id="lblName">اسمك:</label>
+            <h2>إعداد حسابك الشخصي</h2>
+            <label>اسمك:</label>
             <input type="text" id="inputName" placeholder="أدخل اسمك هنا...">
-
-            <label id="lblAvatar">صورة الحساب من هاتفك:</label>
+            <label>صورة الحساب من المعرض:</label>
             <input type="file" id="inputAvatarFile" accept="image/*">
-
-            <label id="lblTheme">المظهر:</label>
+            <label>المظهر:</label>
             <select id="selectTheme">
                 <option value="dark">داكن (Dark Mode)</option>
                 <option value="light">فاتح (Light Mode)</option>
             </select>
-
-            <button class="btn-main" id="btnStart" onclick="completeSetup()">بدء الاستخدام</button>
+            <button class="btn-main" onclick="completeSetup()">بدء الاستخدام</button>
         </div>
     </div>
 
-    <!-- 2. إطار الهاتف الرئيسي (Phone Frame UI) -->
+    <!-- إطار الهاتف الرئيسي -->
     <div class="phone-frame">
         
         <!-- الهيدر العلوي -->
         <div class="messenger-header">
-            <div class="messenger-title" id="headerTitle">الدردشات</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-brands fa-facebook-messenger" style="font-size: 1.8rem; color: var(--primary);"></i>
+                <div class="messenger-title">messenger</div>
+            </div>
             <div class="header-icons">
-                <button class="circle-btn" onclick="openProfile()"><i class="fa-solid fa-user-pen"></i></button>
-                <button class="circle-btn" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                <button class="circle-btn" onclick="addNewChatPrompt()"><i class="fa-solid fa-pen-to-square"></i></button>
             </div>
         </div>
 
@@ -56,77 +44,79 @@
         <div class="search-box-container" id="searchContainer">
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchChatInput" placeholder="بحث..." onkeyup="filterChats(this.value)">
+                <input type="text" id="searchChatInput" placeholder="البحث..." onkeyup="filterChats(this.value)">
             </div>
         </div>
 
-        <!-- محتوى التطبيق والشاشات -->
+        <!-- محتوى التطبيق -->
         <div class="app-body">
             
-            <!-- تبويب الدردشات -->
+            <!-- 1. تبويب الدردشات -->
             <div id="tab-chats" class="screen active">
                 <div class="stories-bar" id="storiesBar">
-                    <!-- قصة المستخدم الشخصية -->
                     <div class="story-item" onclick="addMyStory()">
-                        <img src="" class="story-avatar" id="myStoryImg">
-                        <span id="txtMyStory">قصتك +</span>
+                        <div class="story-add-wrap">
+                            <img src="" class="story-avatar" id="myStoryImg">
+                            <div class="plus-icon">+</div>
+                        </div>
+                        <span>إنشاء قصة</span>
                     </div>
-                    <!-- قصة الشاب الحقيقي المذكور -->
-                    <div class="story-item" onclick="openStoryModal('https://images.unsplash.com/photo-1534447677768-be436bb09401', 'الشاب')">
-                        <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401" class="story-avatar">
-                        <span>الشاب</span>
+                    <div class="story-item" onclick="openChat('Hamza', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde', '111')">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde" class="story-avatar active-story">
+                        <span>Hamza</span>
+                    </div>
+                    <div class="story-item" onclick="openChat('ام صالح', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61', '222')">
+                        <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61" class="story-avatar active-story">
+                        <span>ام صالح</span>
                     </div>
                 </div>
 
-                <!-- قائمة المحادثات -->
                 <div id="chatList">
-                    <div class="chat-item" onclick="openChat('الشاب', 'https://images.unsplash.com/photo-1534447677768-be436bb09401', '88888')">
-                        <div class="avatar-wrap">
-                            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401">
-                            <span class="online-dot"></span>
-                        </div>
+                    <div class="chat-item" onclick="openChat('Mohammad Abd Rabo', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d', '444')">
+                        <div class="avatar-wrap"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d"></div>
                         <div class="chat-details">
-                            <div class="chat-name">الشاب</div>
-                            <div class="chat-preview">مرحباً، كيف حالك اليوم؟</div>
+                            <div class="chat-name">Mohammad Abd Rabo</div>
+                            <div class="chat-preview">تم إرسال صورة • 26 يوليو</div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- قسم الاتصال المباشر P2P -->
-                <div class="p2p-box">
-                    <div style="font-size:0.8rem; margin-bottom:5px;">رقمك الافتراضي: <span id="myPeerIdDisplay" style="color:var(--primary); font-weight:bold;">---</span></div>
-                    <div style="display:flex; gap:5px;">
-                        <input type="text" id="targetIdInput" placeholder="رقم المتصل (5 أرقام)" maxlength="5">
-                        <button class="btn-main" onclick="startCall()" style="width:auto; padding:0 15px;"><i class="fa-solid fa-video"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- تبويب الإشعارات -->
-            <div id="tab-notifications" class="screen">
-                <div class="section-heading">الإشعارات والاتصالات الفائتة</div>
-                <div id="notifList">
-                    <div class="notif-card">
+            <!-- 2. تبويب القصص -->
+            <div id="tab-stories" class="screen">
+                <div class="section-heading" style="font-size: 1.5rem; padding: 15px;">القصص</div>
+                <div class="stories-grid">
+                    <div class="story-card-grid" onclick="openChat('الاستاذ يزيد القاسم', 'https://images.unsplash.com/photo-1534447677768-be436bb09401', '333')">
                         <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401">
-                        <div>
-                            <div style="font-weight:600;">الشاب</div>
-                            <div style="font-size:0.8rem; color:var(--muted);">قام بالاتصال بك عبر الهاتف.</div>
-                        </div>
+                        <span>الاستاذ يزيد القاسم</span>
+                    </div>
+                    <div class="story-card-grid" onclick="addMyStory()">
+                        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe">
+                        <span>إضافة إلى القصة</span>
                     </div>
                 </div>
             </div>
 
-            <!-- تبويب القائمة (Menu) -->
+            <!-- 3. تبويب الإشعارات -->
+            <div id="tab-notifications" class="screen">
+                <div class="section-heading" style="font-size: 1.5rem; padding: 15px;">الإشعارات</div>
+                <div class="notif-card">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde">
+                    <div style="flex:1;"><div style="font-weight:600;">نور الدين عبد ربه</div><div style="font-size:0.85rem; color:var(--muted);">أرسل إليك طلب صداقة.</div></div>
+                </div>
+            </div>
+
+            <!-- 4. تبويب القائمة -->
             <div id="tab-menu" class="screen">
+                <div class="section-heading" style="font-size: 1.5rem; padding: 15px;">القائمة</div>
                 <div class="menu-profile-card">
                     <img src="" id="menuProfileImg" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
-                    <div>
-                        <div id="menuProfileName" style="font-weight:bold;">الاسم</div>
-                        <div style="font-size:0.8rem; color:var(--muted);">حساب نشط ومحمي محلياً</div>
+                    <div style="flex:1;">
+                        <div id="menuProfileName" style="font-weight:bold; font-size: 1.05rem;">المستخدم</div>
+                        <div style="font-size:0.8rem; color:var(--muted);">الملف الشخصي</div>
                     </div>
                 </div>
-                <div class="menu-item" onclick="alert('جميع البيانات مخزنة بأمان على هاتفك.')"><i class="fa-solid fa-shield-halved"></i> الأمان والخصوصية</div>
-                <div class="menu-item" onclick="localStorage.clear(); location.reload();"><i class="fa-solid fa-rotate-right"></i> إعادة ضبط المصنع</div>
+                <div class="menu-item" onclick="toggleTheme()"><i class="fa-solid fa-gear" style="width: 30px;"></i> الإعدادات والمظهر</div>
             </div>
 
         </div>
@@ -135,52 +125,72 @@
         <div id="chatRoomScreen" class="chat-room">
             <div class="room-header">
                 <button class="circle-btn" onclick="closeChat()"><i class="fa-solid fa-arrow-right"></i></button>
-                <img id="roomAvatar" src="" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                <img id="roomAvatar" src="" style="width:38px; height:38px; border-radius:50%; object-fit:cover;">
                 <div id="roomName" style="font-weight:bold; flex:1; margin-right:10px;">الاسم</div>
-                <button class="circle-btn" onclick="startCallFromRoom()" style="color:var(--primary);"><i class="fa-solid fa-video"></i></button>
+                <button class="circle-btn" style="color:var(--primary);" onclick="startCall('audio')"><i class="fa-solid fa-phone"></i></button>
+                <button class="circle-btn" style="color:var(--primary);" onclick="startCall('video')"><i class="fa-solid fa-video"></i></button>
             </div>
             <div class="room-messages" id="roomMessagesBox"></div>
             <div class="room-footer">
+                <label class="circle-btn" style="color:var(--primary); cursor:pointer;">
+                    <i class="fa-solid fa-image"></i>
+                    <input type="file" id="chatImageInput" accept="image/*" style="display:none;" onchange="sendGalleryImage(this)">
+                </label>
                 <input type="text" id="msgInput" placeholder="اكتب رسالة..." onkeypress="handleKey(event)">
                 <button class="circle-btn" onclick="sendMessage()" style="background:var(--primary); color:#fff;"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
 
+        <!-- شاشة الاتصال والفلاتر الجديدة (Call & Filters Screen) -->
+        <div id="callScreen" class="call-screen">
+            <div class="call-background" id="callBackgroundLayer"></div>
+            <video id="callVideoFeed" autoplay playsinline muted></video>
+            
+            <!-- معلومات المتصل والأداة التفاعلية -->
+            <div class="call-top-bar">
+                <div id="callStatusText" style="font-size: 1.2rem; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">جاري الاتصال...</div>
+                <div id="activeFilterBadge" class="filter-badge">بدون فلتر</div>
+            </div>
+
+            <!-- قائمة الـ 15 فلتر وخلفية وجه -->
+            <div class="filters-tray" id="filtersTray">
+                <div class="filter-item active" onclick="applyFilter('normal', 'بدون فلتر')">عادي</div>
+                <div class="filter-item" onclick="applyFilter('dog', '🐶 كلب لطيف')">🐶 كلب</div>
+                <div class="filter-item" onclick="applyFilter('cat', '🐱 قطة مشاكسة')">🐱 قطة</div>
+                <div class="filter-item" onclick="applyFilter('glasses', '🕶️ نظارات شمسية')">🕶️ نظارات</div>
+                <div class="filter-item" onclick="applyFilter('crown', '👑 تاج ملكي')">👑 تاج</div>
+                <div class="filter-item" onclick="applyFilter('heart', '💖 قلوب الحب')">💖 قلوب</div>
+                <div class="filter-item" onclick="applyFilter('fire', '🔥 تأثير النيران')">🔥 نيران</div>
+                <div class="filter-item" onclick="applyFilter('space', '🌌 خلفية فضاء')">🌌 فضاء</div>
+                <div class="filter-item" onclick="applyFilter('beach', '🏖️ شاطئ استوائي')">🏖️ شاطئ</div>
+                <div class="filter-item" onclick="applyFilter('blur', '🌫️ عزل الخلفية')">🌫️ عزل</div>
+                <div class="filter-item" onclick="applyFilter('neon', '🟢 إضاءة نيون')">🟢 نيون</div>
+                <div class="filter-item" onclick="applyFilter('anime', '🌸 تأثير أنمي')">🌸 أنمي</div>
+                <div class="filter-item" onclick="applyFilter('retro', '📺 ريترو قديم')">📺 ريترو</div>
+                <div class="filter-item" onclick="applyFilter('matrix', '💻 مصفوفة الأكواد')">💻 مصفوفة</div>
+                <div class="filter-item" onclick="applyFilter('astronaut', '👨‍🚀 رائد فضاء')">👨‍🚀 رائد</div>
+            </div>
+
+            <!-- أزرار التحكم بالاتصال المطلوبة -->
+            <div class="call-controls-bar">
+                <button class="call-btn" id="btnToggleMute" onclick="toggleMute()"><i class="fa-solid fa-microphone"></i></button>
+                <button class="call-btn" id="btnToggleCam" onclick="toggleCamera()"><i class="fa-solid fa-video"></i></button>
+                <button class="call-btn" id="btnToggleShare" onclick="toggleScreenShare()"><i class="fa-solid fa-desktop"></i></button>
+                <button class="call-btn" id="btnToggleFilters" onclick="toggleFiltersTray()"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+                <button class="call-btn end-call" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i></button>
+            </div>
+        </div>
+
         <!-- شريط التنقل السفلي -->
         <div class="bottom-nav">
-            <button class="nav-btn active" onclick="switchTab('chats', this)"><i class="fa-solid fa-comment"></i><span id="navChat">الدردشات</span></button>
-            <button class="nav-btn" onclick="switchTab('notifications', this)"><i class="fa-solid fa-bell"></i><span id="navNotif">الإشعارات</span></button>
-            <button class="nav-btn" onclick="switchTab('menu', this)"><i class="fa-solid fa-bars"></i><span id="navMenu">القائمة</span></button>
+            <button class="nav-btn" onclick="switchTab('menu', this)"><i class="fa-solid fa-bars"></i><span>القائمة</span></button>
+            <button class="nav-btn" onclick="switchTab('notifications', this)"><i class="fa-solid fa-bell"></i><span>الإشعارات</span></button>
+            <button class="nav-btn" onclick="switchTab('stories', this)"><i class="fa-solid fa-photo-film"></i><span>القصص</span></button>
+            <button class="nav-btn active" onclick="switchTab('chats', this)"><i class="fa-solid fa-comment"></i><span>الدردشات</span></button>
         </div>
 
     </div>
 
-    <!-- نافذة الاتصال المرئي -->
-    <div id="callScreen" class="call-modal">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px; color:#fff;">
-            <span>مكالمة مرئية جارية</span>
-            <button onclick="endCall()" style="background:red; color:#fff; border:none; padding:5px 15px; border-radius:15px; cursor:pointer;">إنهاء</button>
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
-            <video id="remoteVideo" autoplay playsinline style="flex:1; width:100%; background:#222; border-radius:10px; object-fit:cover;"></video>
-            <video id="localVideo" autoplay playsinline muted style="height:120px; width:100px; position:absolute; bottom:60px; right:20px; border-radius:8px; border:2px solid #fff; object-fit:cover;"></video>
-        </div>
-    </div>
-
-    <!-- نافذة المكالمة الواردة (تنبيه الهاتف الحقيقي) -->
-    <div id="incomingModal" class="incoming-alert">
-        <div style="font-size:3rem; color:var(--primary); margin-bottom:15px;"><i class="fa-solid fa-phone-volume fa-bounce"></i></div>
-        <h2>مكالمة واردة جديدة</h2>
-        <p id="incomingCallerText" style="margin:10px 0; color:var(--muted);"></p>
-        <div style="display:flex; gap:15px; width:100%; margin-top:20px;">
-            <button onclick="rejectCall()" style="flex:1; background:red; color:#fff; border:none; padding:12px; border-radius:20px; font-weight:bold;">رفض</button>
-            <button onclick="acceptCall()" style="flex:1; background:green; color:#fff; border:none; padding:12px; border-radius:20px; font-weight:bold;">رد</button>
-        </div>
-    </div>
-
-    <audio id="ringtone" loop src="https://actions.google.com/sounds/v1/alarms/telephone_ring_bell.ogg"></audio>
-
-    <!-- ملف الجافاسكريبت الخارجي -->
     <script src="script.js"></script>
 </body>
 </html>
