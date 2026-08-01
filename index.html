@@ -1,726 +1,806 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق الاتصال المرئي الرقمي - WebRTC</title>
-    <!-- استدعاء مكتبة PeerJS -->
+    <title>منصة الاتصالات والدردشة الافتراضية المتقدمة</title>
+    <!-- PeerJS للاتصال المباشر P2P -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- استدعاء أيقونات FontAwesome -->
+    <!-- FontAwesome للأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #6366f1;
+            --primary: #6366f1;
             --primary-hover: #4f46e5;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --bg-color: #0b0f19;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #0b0f19;
             --card-bg: #111827;
-            --text-color: #f3f4f6;
+            --text: #f3f4f6;
             --text-muted: #9ca3af;
-            --border-color: #374151;
+            --border: #374151;
+            --chat-bg: #1f2937;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        [data-theme="light"] {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --chat-bg: #f9fafb;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background 0.3s, color 0.3s; }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg);
+            color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 15px;
+            padding: 10px;
         }
 
         .app-container {
             background: var(--card-bg);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--border);
             border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             overflow: hidden;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            max-height: 95vh;
         }
 
         .app-header {
-            background: linear-gradient(135deg, #4f46e5, #06b6d4);
-            padding: 20px;
-            text-align: center;
+            background: linear-gradient(135deg, var(--primary), #06b6d4);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
         }
 
-        .app-header h1 {
-            font-size: 1.4rem;
-            color: #ffffff;
-            margin-bottom: 4px;
-        }
+        .header-title h1 { font-size: 1.2rem; }
+        .header-title p { font-size: 0.75rem; opacity: 0.85; }
 
-        .app-header p {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.85);
-        }
+        .header-actions { display: flex; gap: 10px; }
+        .icon-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .icon-btn:hover { background: rgba(255,255,255,0.3); }
 
-        .app-body {
-            padding: 20px;
-        }
+        .app-body { padding: 15px; overflow-y: auto; flex: 1; }
 
         .section-box {
-            background: rgba(17, 24, 39, 0.7);
-            border: 1px solid var(--border-color);
+            background: var(--chat-bg);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .section-box h3 {
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .id-display-container {
-            display: flex;
-            align-items: center;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px 14px;
-            justify-content: space-between;
-        }
-
-        #myNumber {
-            font-family: monospace;
-            font-size: 1.4rem;
-            color: var(--success-color);
-            font-weight: bold;
-            letter-spacing: 3px;
-        }
-
-        .copy-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: color 0.2s;
-        }
-
-        .copy-btn:hover {
-            color: var(--text-color);
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 14px;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-color);
-            font-size: 1.1rem;
-            letter-spacing: 2px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--primary-color);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-danger {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .btn-success {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 12px 15px;
             margin-bottom: 12px;
         }
 
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            background-color: currentColor;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
+        .section-box h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
-        }
-
-        /* سجل الأرقام المحفوظة */
-        .contacts-list {
-            max-height: 120px;
-            overflow-y: auto;
+        .id-display {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 5px;
-        }
-
-        .contact-item {
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            padding: 8px 12px;
-            border-radius: 6px;
-            display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-
-        .contact-item button {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.85rem;
-        }
-
-        /* شاشة المكالمة المرئية */
-        #activeCallScreen {
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .video-container {
-            position: relative;
-            width: 100%;
-            height: 300px;
-            background: #000;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        #remoteVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        #localVideo {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            width: 90px;
-            height: 120px;
-            object-fit: cover;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
             border-radius: 8px;
-            border: 2px solid white;
-            background: #222;
-            transform: scaleX(-1); /* عكس الصورة للشاشة الأمامية */
         }
 
-        .call-controls {
-            display: flex;
-            gap: 10px;
+        #myNumber { font-family: monospace; font-size: 1.2rem; color: var(--success); font-weight: bold; letter-spacing: 2px; }
+
+        .input-row { display: flex; gap: 8px; margin-top: 6px; }
+        input[type="text"], select {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
-        }
-
-        .call-controls .btn {
-            width: auto;
-            padding: 10px 18px;
-            border-radius: 30px;
+            gap: 6px;
             font-size: 0.9rem;
         }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
 
-        /* نافذة المكالمة الواردة (تنبيه) */
+        /* التبويبات السفلية الرئيسية */
+        .nav-tabs {
+            display: flex;
+            background: var(--chat-bg);
+            border-top: 1px solid var(--border);
+            padding: 8px;
+            justify-content: space-around;
+        }
+        .tab-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+        .tab-btn.active { color: var(--primary); font-weight: bold; }
+
+        /* الشاشات الفرعية */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        /* شاشة المكالمة ونظام الفيديو والشات المدمج */
+        #callScreen { display: none; flex-direction: column; height: 100%; position: absolute; top:0; left:0; width:100%; height:100%; background: var(--card-bg); z-index: 50; padding: 15px; }
+        .media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; height: 220px; background: #000; border-radius: 10px; overflow: hidden; position: relative; }
+        .media-grid video { width: 100%; height: 100%; object-fit: cover; background: #222; }
+        .media-grid video.filtered-grayscale { filter: grayscale(100%); }
+        .media-grid video.filtered-sepia { filter: sepia(100%); }
+        .media-grid video.filtered-invert { filter: invert(100%); }
+
+        .call-chat-box { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+        .messages-area { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; max-height: 140px; }
+        .msg { padding: 6px 10px; border-radius: 6px; max-width: 80%; font-size: 0.85rem; word-break: break-all; }
+        .msg.incoming { background: var(--bg); align-self: flex-start; border: 1px solid var(--border); }
+        .msg.outgoing { background: var(--primary); color: white; align-self: flex-end; }
+
+        .chat-input-row { display: flex; padding: 8px; gap: 6px; border-top: 1px solid var(--border); background: var(--card-bg); }
+        .chat-input-row input { flex: 1; padding: 6px 10px; font-size: 0.85rem; }
+
+        /* نافذة الاتصال الوارد */
         #incomingModal {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(11, 15, 25, 0.96);
-            z-index: 100;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 25px;
-            text-align: center;
-            animation: fadeIn 0.3s ease;
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 100;
+            justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .incoming-avatar {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #10b981, #06b6d4);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            color: white;
-            margin-bottom: 15px;
-            box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
-            animation: ringAnimation 1s infinite alternate;
-        }
-
-        @keyframes ringAnimation {
-            from { transform: scale(1); }
-            to { transform: scale(1.1); }
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 15px;
-            margin-top: 25px;
-            width: 100%;
-        }
-
-        /* عناصر وسائط مخفية للاستماع المزدوج */
-        audio { display: none; }
+        .list-item { background: var(--bg); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.9rem; }
+        
+        /* مؤشر حالة الاتصال */
+        .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- رأس التطبيق -->
+        <!-- الرأس -->
         <div class="app-header">
-            <h1><i class="fa-solid fa-video"></i> اتصال الكاميرا الافتراضي</h1>
-            <p>مكالمات مرئية وصوتية عبر أرقام مكونة من 5 خانات</p>
+            <div class="header-title">
+                <h1><i class="fa-solid fa-satellite-dish"></i> شبكة الاتصال السيادية</h1>
+                <p>مكالمات صوت, فيديو, شاشة, شات وملفات P2P مباشرة</p>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="toggleTheme()" title="تغيير المظهر"><i class="fa-solid fa-circle-half-stroke" id="themeIcon"></i></button>
+            </div>
         </div>
 
+        <!-- المحتوى الداخلي المتنقل عبر التبويبات -->
         <div class="app-body">
             
-            <!-- الحالة العامة -->
-            <div style="text-align: center;">
-                <div id="statusBadge" class="status-badge">
-                    <span class="status-dot"></span>
-                    <span id="statusText">جاري الاتصال بالشبكة...</span>
-                </div>
-            </div>
-
-            <!-- الشاشة الرئيسية -->
-            <div id="mainScreen">
-                <!-- قسم رقمي -->
+            <!-- 1. شاشة الاتصال الرئيسية -->
+            <div id="tab-home" class="screen active">
                 <div class="section-box">
-                    <h3><i class="fa-solid fa-id-badge"></i> رقمك الافتراضي (5 أرقام)</h3>
-                    <div class="id-display-container">
-                        <span id="myNumber">-----</span>
-                        <button class="copy-btn" onclick="copyMyId()" title="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
+                    <h3><i class="fa-solid id-card"></i> رقمك الافتراضي (5 خانات)</h3>
+                    <div class="id-display">
+                        <span id="myNumber">جاري التوليد...</span>
+                        <button class="icon-btn" onclick="copyId()" style="background:var(--primary); width:30px; height:30px;"><i class="fa-solid fa-copy"></i></button>
                     </div>
                 </div>
 
-                <!-- قسم الاتصال بالآخرين -->
                 <div class="section-box">
-                    <h3><i class="fa-solid fa-phone-flip"></i> اتصال بـ رقم 5 خانات</h3>
-                    <div class="input-group">
-                        <input type="text" id="targetNumber" maxlength="5" placeholder="مثال: 58291">
-                        <button class="btn btn-primary" onclick="startCall()">
-                            <i class="fa-solid fa-video"></i> بدء اتصال مرئي
-                        </button>
+                    <h3><i class="fa-solid fa-phone"></i> اتصال سريع برقم</h3>
+                    <div class="input-row">
+                        <input type="text" id="targetInput" maxlength="5" placeholder="أدخل 5 أرقام...">
+                        <button class="btn btn-primary" onclick="makeCall()"><i class="fa-solid fa-video"></i> اتصال</button>
                     </div>
                 </div>
 
-                <!-- قسم السجل والأرقام المحفوظة محلياً -->
-                <div class="section-box" style="margin-bottom: 0;">
-                    <h3><i class="fa-solid fa-address-book"></i> الأرقام المحفوظة مؤخراً</h3>
-                    <div id="contactsList" class="contacts-list">
-                        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 10px;">لا توجد أرقام محفوظة بعد</div>
+                <div class="section-box">
+                    <h3><i class="fa-solid fa-users"></i> الغرف الجماعية (Conference)</h3>
+                    <div class="input-row">
+                        <input type="text" id="roomInput" placeholder="رقم الغرفة المشتركة...">
+                        <button class="btn btn-success" onclick="joinRoom()"><i class="fa-solid fa-door-open"></i> انضمام</button>
+                    </div>
+                </div>
+
+                <div class="section-box">
+                    <h3><i class="fa-solid fa-circle-dot"></i> حالة الشبكة</h3>
+                    <div style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
+                        <span class="status-dot"></span> <span id="networkStatus">متصل ومتاح للجميع (Online)</span>
                     </div>
                 </div>
             </div>
 
-            <!-- شاشة المكالمة المرئية النشطة -->
-            <div id="activeCallScreen">
-                <div class="video-container">
-                    <video id="remoteVideo" autoplay playsinline></video>
-                    <video id="localVideo" autoplay playsinline muted></video>
+            <!-- 2. شاشة جهات الاتصال والتسمية -->
+            <div id="tab-contacts" class="screen">
+                <div class="section-box">
+                    <h3><i class="fa-solid fa-address-book"></i> دفتر الأرقام والأسماء المخصصة</h3>
+                    <div class="input-row" style="margin-bottom: 10px;">
+                        <input type="text" id="contactNum" maxlength="5" placeholder="الرقم (5 خانات)">
+                        <input type="text" id="contactName" placeholder="الاسم المستعار (مثال: أحمد)">
+                        <button class="btn btn-primary" onclick="saveContactCustom()">حفظ</button>
+                    </div>
+                    <div id="contactsList"></div>
                 </div>
-                <div style="text-align: center; font-family: monospace; color: var(--text-muted);" id="callTimer">00:00</div>
-                <div class="call-controls">
-                    <button class="btn btn-primary" id="muteBtn" onclick="toggleMute()"><i class="fa-solid fa-microphone"></i> كتم</button>
-                    <button class="btn btn-primary" id="videoBtn" onclick="toggleVideo()"><i class="fa-solid fa-video"></i> إيقاف الكاميرا</button>
-                    <button class="btn btn-danger" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i> إنهاء</button>
+            </div>
+
+            <!-- 3. شاشة السجلات -->
+            <div id="tab-logs" class="screen">
+                <div class="section-box">
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> سجل المكالمات والنشاطات</h3>
+                    <div id="logsList" style="max-height: 250px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <!-- 4. شاشة الإعدادات والنغمات -->
+            <div id="tab-settings" class="screen">
+                <div class="section-box">
+                    <h3><i class="fa-solid fa-bell"></i> اختر نغمة الرنين (10 نغمات)</h3>
+                    <select id="ringtoneSelect" onchange="changeRingtone()">
+                        <option value="1">النغمة الرقمية الكلاسيكية</option>
+                        <option value="2">رنين الهاتف الأرضي القديم</option>
+                        <option value="3">نبضات إلكترونية هادئة</option>
+                        <option value="4">تنبيه فضائي مستقبلي</option>
+                        <option value="5">صفير ناعم متقطع</option>
+                        <option value="6">رنين ماريمبا خفيف</option>
+                        <option value="7">موسيقى تنبيه سريعة</option>
+                        <option value="8">رنين طوارئ خفيف</option>
+                        <option value="9">نغمة جرس متصاعدة</option>
+                        <option value="10">صوت رنين راديو تجريبي</option>
+                    </select>
+                </div>
+                <div class="section-box">
+                    <h3><i class="fa-solid fa-sliders"></i> خصائص الأداء والبث</h3>
+                    <label style="font-size:0.85rem; display:block; margin-bottom:5px;">جودة الكاميرا والفيديو:</label>
+                    <select id="videoQuality" style="margin-bottom: 10px;">
+                        <option value="hd">عالية جداً (HD 720p)</option>
+                        <option value="sd" selected>متوسطة ومستقرة (SD)</option>
+                        <option value="low">منخفضة للإنترنت الضعيف (Low)</option>
+                    </select>
                 </div>
             </div>
 
         </div>
+
+        <!-- أزرار التنقل السفلية -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('home', this)"><i class="fa-solid fa-house"></i> الرئيسية</button>
+            <button class="tab-btn" onclick="switchTab('contacts', this)"><i class="fa-solid fa-address-book"></i> الأسماء</button>
+            <button class="tab-btn" onclick="switchTab('logs', this)"><i class="fa-solid fa-clock-rotate-left"></i> السجل</button>
+            <button class="tab-btn" onclick="switchTab('settings', this)"><i class="fa-solid fa-gear"></i> الإعدادات</button>
+        </div>
+
+        <!-- شاشة المكالمة المرئية والنشطة والشات -->
+        <div id="callScreen">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span id="callPartnerTitle" style="font-weight: bold; font-family: monospace; color: var(--success);">مكالمة جارية...</span>
+                <span id="callTimer" style="font-family: monospace;">00:00</span>
+            </div>
+
+            <!-- مربعات الفيديو والفلتر -->
+            <div class="media-grid">
+                <video id="remoteVideo" autoplay playsinline></video>
+                <video id="localVideo" autoplay playsinline muted></video>
+            </div>
+
+            <!-- خيارات تعديل الصوت والفلاتر أثناء المكالمة -->
+            <div style="display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px;">
+                <select id="cameraFilter" onchange="applyFilter(this.value)" style="font-size:0.75rem; padding:5px;">
+                    <option value="none">بدون فلتر</option>
+                    <option value="grayscale">أبيض وأسود</option>
+                    <option value="sepia">نمط قديم (Sepia)</option>
+                    <option value="invert">عكس الألوان (Invert)</option>
+                </select>
+                <button class="btn btn-warning" onclick="toggleScreenShare()" style="font-size:0.75rem; padding:5px 8px;"><i class="fa-solid fa-desktop"></i> الشاشة</button>
+                <button class="btn btn-primary" onclick="switchCamera()" style="font-size:0.75rem; padding:5px 8px;"><i class="fa-solid fa-camera-rotate"></i> قلب</button>
+            </div>
+
+            <!-- صندوق الشات وإرسال الملفات والرسائل الصوتية -->
+            <div class="call-chat-box">
+                <div class="messages-area" id="messagesArea"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="اكتب رسالة أو أرسل صورة..." onkeypress="checkEnter(event)">
+                    <label class="icon-btn" style="background:var(--primary); cursor:pointer; width:35px; height:35px;" title="إرسال ملف/صورة">
+                        <i class="fa-solid fa-paperclip"></i>
+                        <input type="file" id="fileInput" style="display:none;" onchange="sendFile(this)">
+                    </label>
+                    <button class="btn btn-primary" onclick="sendTextMessage()" style="padding: 6px 10px;"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- أزرار التحكم بالمكالمة -->
+            <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px;">
+                <button class="btn btn-primary" id="muteAudioBtn" onclick="toggleMuteAudio()"><i class="fa-solid fa-microphone"></i> كتم</button>
+                <button class="btn btn-primary" id="muteVideoBtn" onclick="toggleMuteVideo()"><i class="fa-solid fa-video"></i> فيديو</button>
+                <button class="btn btn-danger" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i> إنهاء</button>
+            </div>
+        </div>
+
     </div>
 
-    <!-- نافذة منبثقة للمكالمة الواردة (تنبيه مع نغمة) -->
+    <!-- نافذة منبثقة للمكالمات الواردة مع إشعارات ونغمات متعددة -->
     <div id="incomingModal">
-        <div class="incoming-avatar">
+        <div style="width: 70px; height: 70px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; margin-bottom: 15px; animation: pulse 1s infinite;">
             <i class="fa-solid fa-phone-volume"></i>
         </div>
-        <h2>مكالمة مرئية واردة!</h2>
-        <p id="incomingCallerId" style="color: var(--success-color); font-size: 1.5rem; font-family: monospace; margin-top: 10px; letter-spacing: 2px;"></p>
-        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 5px;">يريد شخص ما التواصل معك بالصوت والصورة</p>
-        
-        <div class="modal-actions">
-            <button class="btn btn-danger" onclick="rejectCall()">
-                <i class="fa-solid fa-xmark"></i> رفض
-            </button>
-            <button class="btn btn-success" onclick="acceptCall()">
-                <i class="fa-solid fa-check"></i> رد الآن
-            </button>
+        <h2 style="color: #fff; margin-bottom: 5px;">مكالمة واردة جديدة!</h2>
+        <p id="incomingCallerText" style="color: var(--success); font-family: monospace; font-size: 1.3rem; margin-bottom: 20px;"></p>
+        <div style="display: flex; gap: 15px; width: 80%;">
+            <button class="btn btn-danger" onclick="rejectIncomingCall()" style="flex: 1;"><i class="fa-solid fa-xmark"></i> رفض</button>
+            <button class="btn btn-success" onclick="acceptIncomingCall()" style="flex: 1;"><i class="fa-solid fa-check"></i> رد</button>
         </div>
     </div>
 
-    <!-- عنصر صوتي لإنشاء نغمة تنبيه رنين عند استقبال المكالمة -->
-    <audio id="ringtone" loop src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"></audio>
+    <!-- عنصر الصوت للرنين -->
+    <audio id="audioRingtone" loop></audio>
 
     <script>
-        let peer;
-        let currentCall = null;
-        let localStream = null;
+        let myId = "";
+        let peer = null;
+        let activeCall = null;
         let incomingCallObj = null;
+        let localStream = null;
+        let dataConnection = null;
         let timerInterval = null;
-        let secondsElapsed = 0;
-        let isMuted = false;
-        let isVideoOff = false;
-        let myFiveDigitId = "";
+        let secondsCount = 0;
+        let isMutedA = false;
+        let isMutedV = false;
+        let isScreenSharing = false;
+        let currentFacingMode = "user";
 
-        // توليد رقم عشوائي مكون من 5 أرقام فقط
-        function generateFiveDigitId() {
-            return Math.floor(10000 + Math.random() * 90000).toString();
-        }
+        // توليد رقم 5 خانات عشوائي
+        function initApp() {
+            myId = Math.floor(10000 + Math.random() * 90000).toString();
+            document.getElementById('myNumber').innerText = myId;
 
-        // تهيئة النظام وربطه بـ PeerJS
-        function initializeApp() {
-            myFiveDigitId = generateFiveDigitId();
-            // وضع بادئة مميزة لضمان عدم حدوث تداخل كبير في شبكة البث العامة لـ PeerJS
-            const peerId = "usr_" + myFiveDigitId;
-
-            peer = new Peer(peerId);
+            peer = new Peer("net_call_" + myId);
 
             peer.on('open', (id) => {
-                document.getElementById('myNumber').innerText = myFiveDigitId;
-                updateStatus('متصل وجاهز للمكالمات', 'success');
-                loadContacts();
+                console.log("Peer Connected ID:", id);
             });
 
             peer.on('error', (err) => {
-                console.error(err);
                 if(err.type === 'unavailable-ID') {
-                    // إذا حدث وتكرر الرقم، أعد التوليد تلقائياً
-                    initializeApp();
-                } else {
-                    updateStatus('خطأ في الاتصال بالخادم', 'danger');
+                    initApp(); // إعادة التوليد في حال التداخل النادر
                 }
             });
 
-            // استقبال المكالمات الواردة وتفعيل التنبيه (الإشعار الصوتي والبصري)
+            // استقبال المكالمات الواردة
             peer.on('call', (call) => {
                 incomingCallObj = call;
-                // استخراج ال5 أرقام الحقيقية للمتصل من الـ Peer ID
-                const callerRealId = call.peer.replace("usr_", "");
-                document.getElementById('incomingCallerId').innerText = callerRealId;
+                let realCaller = call.peer.replace("net_call_", "");
+                let displayName = getContactName(realCaller) || realCaller;
+                document.getElementById('incomingCallerText').innerText = "من: " + displayName;
                 
-                // إظهار نافذة التنبيه وتشغيل الرنين
+                playSelectedRingtone();
                 document.getElementById('incomingModal').style.display = 'flex';
-                const ringtone = document.getElementById('ringtone');
-                ringtone.play().catch(e => console.log("يحتاج تفاعل مستخدم لتشغيل الصوت تلقائياً"));
+                addLog('مكالمة واردة من ' + displayName);
             });
-        }
 
-        function updateStatus(text, type) {
-            document.getElementById('statusText').innerText = text;
-        }
-
-        function copyMyId() {
-            navigator.clipboard.writeText(myFiveDigitId).then(() => {
-                alert('تم نسخ رقمك (' + myFiveDigitId + ') بنجاح!');
+            // استقبال قنوات البيانات (الشات والملفات)
+            peer.on('connection', (conn) => {
+                dataConnection = conn;
+                setupDataConnectionEvents();
             });
+
+            loadContactsUI();
+            loadLogsUI();
         }
 
-        // حفظ الرقم في الذاكرة المحلية (LocalStorage) لتخزينه عندك وعند من تتصل به
-        function saveContact(number) {
-            if (!number || number.length !== 5) return;
-            let contacts = JSON.parse(localStorage.getItem('saved_contacts') || '[]');
-            if (!contacts.includes(number)) {
-                contacts.unshift(number); // إضافة الرقم في البداية
-                if (contacts.length > 5) contacts.pop(); // الاحتفاظ بآخر 5 أرقام فقط
-                localStorage.setItem('saved_contacts', JSON.stringify(contacts));
-            }
-            loadContacts();
+        // تبديل الشاشات والتبويبات
+        function switchTab(tabName, btnEl) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            btnEl.classList.add('active');
         }
 
-        function loadContacts() {
-            const contactsListEl = document.getElementById('contactsList');
-            let contacts = JSON.parse(localStorage.getItem('saved_contacts') || '[]');
+        function copyId() {
+            navigator.clipboard.writeText(myId);
+            alert('تم نسخ رقمك الافتراضي بنجاح!');
+        }
+
+        // إدارة النغمات (10 نغمات)
+        const ringtoneUrls = {
+            "1": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
+            "2": "https://actions.google.com/sounds/v1/alarms/telephone_ring_bell.ogg",
+            "3": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
+            "4": "https://actions.google.com/sounds/v1/science_fiction/sci_fi_radar.ogg",
+            "5": "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg",
+            "6": "https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg",
+            "7": "https://actions.google.com/sounds/v1/alarms/bugle_call.ogg",
+            "8": "https://actions.google.com/sounds/v1/alarms/critical_alarm.ogg",
+            "9": "https://actions.google.com/sounds/v1/alarms/gentle_alarm.ogg",
+            "10": "https://actions.google.com/sounds/v1/communication/phone_peep_peep.ogg"
+        };
+
+        function playSelectedRingtone() {
+            let choice = document.getElementById('ringtoneSelect').value;
+            let audio = document.getElementById('audioRingtone');
+            audio.src = ringtoneUrls[choice] || ringtoneUrls["1"];
+            audio.play().catch(e => console.log("تفاعل مستخدم مطلوب للرنين"));
+        }
+
+        function stopRingtone() {
+            let audio = document.getElementById('audioRingtone');
+            audio.pause();
+            audio.currentTime = 0;
+        }
+
+        // جودة الفيديو والبث
+        async function getStream() {
+            let quality = document.getElementById('videoQuality').value;
+            let constraints = { audio: true, video: { facingMode: currentFacingMode } };
             
-            if (contacts.length === 0) {
-                contactsListEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 10px;">لا توجد أرقام محفوظة بعد</div>`;
-                return;
+            if (quality === 'hd') {
+                constraints.video.width = { ideal: 1280 };
+                constraints.video.height = { ideal: 720 };
+            } else if (quality === 'low') {
+                constraints.video.width = { ideal: 320 };
+                constraints.video.height = { ideal: 240 };
             }
 
-            contactsListEl.innerHTML = '';
-            contacts.forEach(num => {
-                const item = document.createElement('div');
-                item.className = 'contact-item';
-                item.innerHTML = `
-                    <span><i class="fa-solid fa-user-clock" style="margin-left: 6px; color: var(--primary-color);"></i>${num}</span>
-                    <button onclick="callSavedContact('${num}')"><i class="fa-solid fa-phone"></i> اتصال</button>
-                `;
-                contactsListEl.appendChild(item);
-            });
-        }
-
-        function callSavedContact(num) {
-            document.getElementById('targetNumber').value = num;
-            startCall();
-        }
-
-        // تشغيل الكاميرا والميكروفون بآن واحد مع حل مشكلة الصوت المفقود
-        async function getMediaStream() {
             if (!localStream) {
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
-                        audio: true 
-                    });
-                } catch (err) {
-                    alert('تعذر الوصول إلى الكاميرا أو الميكروفون. يرجى السماح بالصلاحيات من المتصفح.');
-                    throw err;
-                }
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
             }
             return localStream;
         }
 
-        // بدء مكالمة صادرة
-        async function startCall() {
-            let targetInput = document.getElementById('targetNumber').value.trim();
-            
-            if (targetInput.length !== 5) {
-                alert('الرجاء التأكد من إدخال رقم افتراضي صحيح مكون من 5 أرقام.');
+        // بدء الاتصال المرئي والصوتي
+        async function makeCall() {
+            let target = document.getElementById('targetInput').value.trim();
+            if(target.length !== 5) {
+                alert('الرجاء إدخال رقم افتراضي صحيح مكون من 5 خانات.');
                 return;
             }
-
-            if (targetInput === myFiveDigitId) {
+            if(target === myId) {
                 alert('لا يمكنك الاتصال برقمك الشخصي.');
                 return;
             }
 
-            // حفظ الرقم في السجل لديك
-            saveContact(targetInput);
-
-            updateStatus('جاري الاتصال بـ ' + targetInput + '...', 'primary');
+            saveContact(target, target);
+            addLog('اتصال صادر إلى ' + target);
 
             try {
-                const stream = await getMediaStream();
-                // عرض الفيديو المحلي فوراً
-                const localVideo = document.getElementById('localVideo');
-                localVideo.srcObject = stream;
+                let stream = await getStream();
+                document.getElementById('localVideo').srcObject = stream;
 
-                const targetPeerId = "usr_" + targetInput;
-                const call = peer.call(targetPeerId, stream);
-                setupCallEvents(call);
+                let peerTarget = "net_call_" + target;
+                let call = peer.call(peerTarget, stream);
+                
+                // فتح قناة بيانات للشات والملفات
+                dataConnection = peer.connect(peerTarget);
+                setupDataConnectionEvents();
+
+                setupCallHandlers(call);
             } catch (err) {
-                updateStatus('فشل بدء المكالمة', 'danger');
+                alert('فشل تشغيل الكاميرا أو الميكروفون.');
             }
         }
 
         // قبول المكالمة الواردة
-        async function acceptCall() {
-            // إيقاف رنين الإشعار
-            const ringtone = document.getElementById('ringtone');
-            ringtone.pause();
-            ringtone.currentTime = 0;
-
+        async function acceptIncomingCall() {
+            stopRingtone();
             document.getElementById('incomingModal').style.display = 'none';
 
-            // حفظ رقم المتصل في السجل تلقائياً لكي يظهر عنده وعنده كـ سجل محفوظ
-            const callerRealId = incomingCallObj.peer.replace("usr_", "");
-            saveContact(callerRealId);
+            let realCaller = incomingCallObj.peer.replace("net_call_", "");
+            saveContact(realCaller, realCaller);
+            addLog('مكالمة واردة مقبولة من ' + realCaller);
 
             try {
-                const stream = await getMediaStream();
-                const localVideo = document.getElementById('localVideo');
-                localVideo.srcObject = stream;
+                let stream = await getStream();
+                document.getElementById('localVideo').srcObject = stream;
 
                 incomingCallObj.answer(stream);
-                setupCallEvents(incomingCallObj);
+                setupCallHandlers(incomingCallObj);
             } catch (err) {
-                alert('فشل تشغيل الوسائط.');
+                alert('تعذر فتح الوسائط.');
             }
         }
 
-        // رفض المكالمة الواردة
-        function rejectCall() {
-            const ringtone = document.getElementById('ringtone');
-            ringtone.pause();
-            ringtone.currentTime = 0;
-
-            if (incomingCallObj) {
-                incomingCallObj.close();
-            }
+        function rejectIncomingCall() {
+            stopRingtone();
+            if(incomingCallObj) incomingCallObj.close();
             document.getElementById('incomingModal').style.display = 'none';
             incomingCallObj = null;
         }
 
-        // معالجة تدفق الفيديو والصوت الطرفي (لحل مشكلة انعدام الصوت نهائياً)
-        function setupCallEvents(call) {
-            currentCall = call;
-            
-            call.on('stream', (remoteStream) => {
-                const remoteVideo = document.getElementById('remoteVideo');
-                remoteVideo.srcObject = remoteStream;
-                
-                // حل تقني مؤكد لضمان عمل الصوت بوضوح تام بدون كتم أو تقطيع
-                remoteVideo.muted = false;
-                remoteVideo.play().catch(e => {
-                    console.log("التشغيل التلقائي للصوت يتطلب تفاعل:", e);
-                });
+        // معالجة تدفق المكالمة
+        function setupCallHandlers(call) {
+            activeCall = call;
 
-                showActiveCallUI();
+            call.on('stream', (remoteStream) => {
+                let remoteVideo = document.getElementById('remoteVideo');
+                remoteVideo.srcObject = remoteStream;
+                remoteVideo.play();
+                showCallScreenUI(call.peer.replace("net_call_", ""));
             });
 
             call.on('close', () => {
-                endCallUI();
-            });
-
-            call.on('error', (err) => {
-                console.error(err);
-                endCallUI();
+                closeCallUI();
             });
         }
 
-        // تفعيل واجهة المكالمة النشطة والعداد
-        function showActiveCallUI() {
-            document.getElementById('mainScreen').style.display = 'none';
-            document.getElementById('activeCallScreen').style.display = 'flex';
-            updateStatus('مكالمة مرئية نشطة', 'success');
-            
-            secondsElapsed = 0;
-            document.getElementById('callTimer').innerText = "00:00";
+        function setupDataConnectionEvents() {
+            if(!dataConnection) return;
+            dataConnection.on('data', (data) => {
+                if(data.type === 'text') {
+                    appendMessage(data.content, 'incoming');
+                } else if(data.type === 'file') {
+                    appendFileMessage(data.name, data.content, 'incoming');
+                }
+            });
+        }
+
+        function showCallScreenUI(partnerId) {
+            document.getElementById('callScreen').style.display = 'flex';
+            let name = getContactName(partnerId) || partnerId;
+            document.getElementById('callPartnerTitle').innerText = "مكالمة مع: " + name;
+
+            secondsCount = 0;
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                secondsElapsed++;
-                let mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
-                let secs = (secondsElapsed % 60).toString().padStart(2, '0');
-                document.getElementById('callTimer').innerText = `${mins}:${secs}`;
+                secondsCount++;
+                let m = Math.floor(secondsCount/60).toString().padStart(2,'0');
+                let s = (secondsCount%60).toString().padStart(2,'0');
+                document.getElementById('callTimer').innerText = `${m}:${s}`;
             }, 1000);
         }
 
-        // إنهاء المكالمة
         function endCall() {
-            if (currentCall) {
-                currentCall.close();
-            }
-            endCallUI();
+            if(activeCall) activeCall.close();
+            if(dataConnection) dataConnection.close();
+            closeCallUI();
         }
 
-        function endCallUI() {
-            if (currentCall) {
-                currentCall = null;
-            }
+        function closeCallUI() {
             clearInterval(timerInterval);
-
-            // إيقاف تيار الكاميرا المحلي مؤقتاً لتفريغ الذاكرة
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
+            if(localStream) {
+                localStream.getTracks().forEach(t => t.stop());
                 localStream = null;
             }
-
-            document.getElementById('activeCallScreen').style.display = 'none';
-            document.getElementById('mainScreen').style.display = 'block';
-            document.getElementById('targetNumber').value = '';
-            updateStatus('متصل وجاهز للمكالمات', 'success');
+            document.getElementById('callScreen').style.display = 'none';
+            document.getElementById('messagesArea').innerHTML = '';
+            activeCall = null;
+            dataConnection = null;
         }
 
-        // زر كتم الميكروفون
-        function toggleMute() {
-            if (!localStream) return;
-            isMuted = !isMuted;
-            localStream.getAudioTracks()[0].enabled = !isMuted;
-            const muteBtn = document.getElementById('muteBtn');
-            if (isMuted) {
-                muteBtn.innerHTML = '<i class="fa-solid fa-microphone-slash"></i> إلغاء الكتم';
-                muteBtn.style.backgroundColor = '#d97706';
-            } else {
-                muteBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> كتم';
-                muteBtn.style.backgroundColor = 'var(--primary-color)';
+        // الغرف الجماعية (Conference Room)
+        function joinRoom() {
+            let roomId = document.getElementById('roomInput').value.trim();
+            if(!roomId) {
+                alert('الرجاء إدخال اسم أو رقم الغرفة الجماعية.');
+                return;
+            }
+            // الاتصال برقم الغرفة الأساسي
+            document.getElementById('targetInput').value = roomId;
+            makeCall();
+        }
+
+        // مشاركة الشاشة (Screen Share)
+        async function toggleScreenShare() {
+            try {
+                if(!isScreenSharing) {
+                    let screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                    let videoTrack = screenStream.getVideoTracks()[0];
+                    
+                    let sender = activeCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    if(sender) sender.replaceTrack(videoTrack);
+
+                    document.getElementById('localVideo').srcObject = screenStream;
+                    isScreenSharing = true;
+
+                    videoTrack.onended = () => {
+                        toggleScreenShare(); // العودة للكاميرا العادية عند إيقاف المشاركة
+                    };
+                } else {
+                    let stream = await getStream();
+                    let videoTrack = stream.getVideoTracks()[0];
+                    let sender = activeCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+                    if(sender) sender.replaceTrack(videoTrack);
+
+                    document.getElementById('localVideo').srcObject = stream;
+                    isScreenSharing = false;
+                }
+            } catch(e) {
+                console.log("مشاركة الشاشة ملغاة أو غير متاح");
             }
         }
 
-        // زر إيقاف وتشغيل الكاميرا
-        function toggleVideo() {
-            if (!localStream) return;
-            isVideoOff = !isVideoOff;
-            localStream.getVideoTracks()[0].enabled = !isVideoOff;
-            const videoBtn = document.getElementById('videoBtn');
-            if (isVideoOff) {
-                videoBtn.innerHTML = '<i class="fa-solid fa-video-slash"></i> تشغيل الكاميرا';
-                videoBtn.style.backgroundColor = '#d97706';
-            } else {
-                videoBtn.innerHTML = '<i class="fa-solid fa-video"></i> إيقاف الكاميرا';
-                videoBtn.style.backgroundColor = 'var(--primary-color)';
+        // التبديل بين الكاميرات (أمامية وخلفية)
+        async function switchCamera() {
+            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+            if(localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+            }
+            let stream = await getStream();
+            document.getElementById('localVideo').srcObject = stream;
+            let videoTrack = stream.getVideoTracks()[0];
+            let sender = activeCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if(sender) sender.replaceTrack(videoTrack);
+        }
+
+        // فلاتر الكاميرا
+        function applyFilter(filterName) {
+            let remoteV = document.getElementById('remoteVideo');
+            remoteV.className = "";
+            if(filterName !== 'none') {
+                remoteV.classList.add('filtered-' + filterName);
             }
         }
 
-        // تشغيل التطبيق تلقائياً عند التحميل
+        // شات وإرسال رسائل وملفات
+        function sendTextMessage() {
+            let txt = document.getElementById('chatInput').value.trim();
+            if(!txt) return;
+
+            appendMessage(txt, 'outgoing');
+            if(dataConnection && dataConnection.open) {
+                dataConnection.send({ type: 'text', content: txt });
+            }
+            document.getElementById('chatInput').value = '';
+        }
+
+        function checkEnter(e) {
+            if(e.key === 'Enter') sendTextMessage();
+        }
+
+        function appendMessage(text, type) {
+            let area = document.getElementById('messagesArea');
+            let div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.innerText = text;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function sendFile(input) {
+            let file = input.files[0];
+            if(!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let fileData = { name: file.name, content: e.target.result };
+                appendFileMessage(file.name, e.target.result, 'outgoing');
+                if(dataConnection && dataConnection.open) {
+                    dataConnection.send({ type: 'file', ...fileData });
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function appendFileMessage(name, dataUrl, type) {
+            let area = document.getElementById('messagesArea');
+            let div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.innerHTML = `ملف مرفق: <a href="${dataUrl}" download="${name}" style="color:inherit; text-decoration:underline;">${name}</a>`;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // كتم الميكروفون والصوت
+        function toggleMuteAudio() {
+            if(!localStream) return;
+            isMutedA = !isMutedA;
+            localStream.getAudioTracks()[0].enabled = !isMutedA;
+            let btn = document.getElementById('muteAudioBtn');
+            btn.style.background = isMutedA ? 'var(--danger)' : 'var(--primary)';
+        }
+
+        function toggleMuteVideo() {
+            if(!localStream) return;
+            isMutedV = !isMutedV;
+            localStream.getVideoTracks()[0].enabled = !isMutedV;
+            let btn = document.getElementById('muteVideoBtn');
+            btn.style.background = isMutedV ? 'var(--danger)' : 'var(--primary)';
+        }
+
+        // الوضع الفاتح والداكن
+        function toggleTheme() {
+            let html = document.documentElement;
+            let current = html.getAttribute('data-theme');
+            let next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            document.getElementById('themeIcon').className = next === 'dark' ? 'fa-solid fa-circle-half-stroke' : 'fa-solid fa-moon';
+        }
+
+        // إدارة الأسماء والجهات المحفوظة
+        function saveContactCustom() {
+            let num = document.getElementById('contactNum').value.trim();
+            let name = document.getElementById('contactName').value.trim();
+            if(num.length !== 5 || !name) {
+                alert('الرجاء إدخال رقم من 5 خانات واسم صحيح.');
+                return;
+            }
+            saveContact(num, name);
+            document.getElementById('contactNum').value = '';
+            document.getElementById('contactName').value = '';
+            loadContactsUI();
+        }
+
+        function saveContact(num, name) {
+            let contacts = JSON.parse(localStorage.getItem('my_contacts') || '{}');
+            contacts[num] = name;
+            localStorage.setItem('my_contacts', JSON.stringify(contacts));
+            loadContactsUI();
+        }
+
+        function getContactName(num) {
+            let contacts = JSON.parse(localStorage.getItem('my_contacts') || '{}');
+            return contacts[num] || null;
+        }
+
+        function loadContactsUI() {
+            let contacts = JSON.parse(localStorage.getItem('my_contacts') || '{}');
+            let listEl = document.getElementById('contactsList');
+            listEl.innerHTML = '';
+            
+            let keys = Object.keys(contacts);
+            if(keys.length === 0) {
+                listEl.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:10px;">لا توجد جهات اتصال مسجلة</div>`;
+                return;
+            }
+
+            keys.forEach(num => {
+                let item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `<span><strong>${contacts[num]}</strong> (${num})</span> <button class="btn btn-primary" style="padding:4px 8px; font-size:0.8rem;" onclick="callContact('${num}')"><i class="fa-solid fa-phone"></i></button>`;
+                listEl.appendChild(item);
+            });
+        }
+
+        function callContact(num) {
+            document.getElementById('targetInput').value = num;
+            switchTab('home', document.querySelector('.tab-btn'));
+            makeCall();
+        }
+
+        // سجل المكالمات والنشاطات
+        function addLog(text) {
+            let logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
+            let time = new Date().toLocaleTimeString();
+            logs.unshift({ text, time });
+            if(logs.length > 20) logs.pop();
+            localStorage.setItem('my_logs', JSON.stringify(logs));
+            loadLogsUI();
+        }
+
+        function loadLogsUI() {
+            let logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
+            let listEl = document.getElementById('logsList');
+            listEl.innerHTML = '';
+            if(logs.length === 0) {
+                listEl.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:10px;">لا توجد سجلات بعد</div>`;
+                return;
+            }
+            logs.forEach(log => {
+                let div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `<span>${log.text}</span> <span style="font-size:0.75rem; color:var(--text-muted);">${log.time}</span>`;
+                listEl.appendChild(div);
+            });
+        }
+
         window.onload = () => {
-            initializeApp();
+            initApp();
         };
     </script>
 </body>
