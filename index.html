@@ -10,34 +10,38 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bg: #0b0f19;
-            --card-bg: #111827;
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border: #374151;
-            --chat-bg: #1f2937;
+            --primary: #0084ff;
+            --primary-hover: #006dd6;
+            --success: #31a24c;
+            --danger: #fa383e;
+            --warning: #f7b125;
+            --bg: #18191a;
+            --card-bg: #242526;
+            --text: #e4e6eb;
+            --text-muted: #b0b3b8;
+            --border: #393a3b;
+            --chat-bg: #303031;
+            --msg-out: #0084ff;
+            --msg-in: #3a3b3c;
         }
 
         [data-theme="light"] {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --success: #059669;
-            --danger: #dc2626;
-            --warning: #d97706;
-            --bg: #f3f4f6;
+            --primary: #0084ff;
+            --primary-hover: #006dd6;
+            --success: #31a24c;
+            --danger: #fa383e;
+            --warning: #e69500;
+            --bg: #f0f2f5;
             --card-bg: #ffffff;
-            --text: #1f2937;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --chat-bg: #f9fafb;
+            --text: #050505;
+            --text-muted: #65676b;
+            --border: #ced0d4;
+            --chat-bg: #f0f2f5;
+            --msg-out: #0084ff;
+            --msg-in: #e4e6eb;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background 0.3s, color 0.3s; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
         body {
             background-color: var(--bg);
@@ -46,310 +50,413 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 10px;
+            padding: 0;
         }
 
-        .app-container {
+        /* حاوية الهاتف المحمول المطابقة لتصميم الصور */
+        .phone-frame {
             background: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             width: 100%;
-            max-width: 600px;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 950px;
             overflow: hidden;
             position: relative;
             display: flex;
             flex-direction: column;
-            max-height: 95vh;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .app-header {
-            background: linear-gradient(135deg, var(--primary), #06b6d4);
-            padding: 15px 20px;
+        @media(min-width: 500px) {
+            .phone-frame {
+                border-radius: 30px;
+                height: 92vh;
+            }
+        }
+
+        /* شريط العلوي (Messenger Header) */
+        .messenger-header {
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #fff;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+        .messenger-title { font-size: 1.5rem; font-weight: bold; color: var(--text); }
+        .header-icons { display: flex; gap: 12px; align-items: center; }
+        .circle-icon-btn {
+            background: var(--chat-bg); border: none; color: var(--text); width: 38px; height: 38px;
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+        }
+        .circle-icon-btn:hover { background: var(--border); }
+
+        /* شريط البحث */
+        .search-container { padding: 8px 16px; background: var(--card-bg); }
+        .search-box {
+            background: var(--chat-bg); border-radius: 20px; padding: 8px 15px; display: flex; align-items: center; gap: 10px; color: var(--text-muted);
+        }
+        .search-box input { background: none; border: none; color: var(--text); outline: none; width: 100%; font-size: 0.95rem; }
+
+        /* المحتوى والتبويبات */
+        .app-body { flex: 1; overflow-y: auto; position: relative; background: var(--card-bg); }
+        .screen { display: none; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        /* شاشة الدردشات الرئيسية (Messenger Style) */
+        .stories-bar { display: flex; gap: 12px; padding: 10px 16px; overflow-x: auto; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        .story-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; min-width: 65px; }
+        .story-avatar { width: 56px; height: 56px; border-radius: 50%; border: 3px solid var(--primary); padding: 2px; object-fit: cover; position: relative; }
+        .story-item span { font-size: 0.75rem; color: var(--text); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 65px; }
+
+        .chat-list-item {
+            display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; transition: background 0.2s;
+        }
+        .chat-list-item:hover { background: var(--chat-bg); }
+        .chat-avatar-wrap { position: relative; width: 56px; height: 56px; min-width: 56px; }
+        .chat-avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+        .online-badge { width: 14px; height: 14px; background: var(--success); border: 2px solid var(--card-bg); border-radius: 50%; position: absolute; bottom: 2px; right: 2px; }
+        
+        .chat-info { flex: 1; overflow: hidden; }
+        .chat-username { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+        .chat-lastmsg { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+
+        /* شاشة المحادثة الخارجية والداخلية المخصصة */
+        #activeChatScreen {
+            display: none; flex-direction: column; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--card-bg); z-index: 40;
+        }
+        .chat-room-header {
+            display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid var(--border); background: var(--card-bg);
+        }
+        .chat-room-header-left { display: flex; align-items: center; gap: 10px; }
+        .chat-messages-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+        
+        .message-bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 0.9rem; word-break: break-all; line-height: 1.4; }
+        .message-bubble.incoming { background: var(--msg-in); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; }
+        .message-bubble.outgoing { background: var(--msg-out); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+
+        .chat-input-footer {
+            display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--card-bg); border-top: 1px solid var(--border);
+        }
+        .chat-input-footer input {
+            flex: 1; background: var(--chat-bg); border: none; border-radius: 20px; padding: 10px 15px; color: var(--text); outline: none; font-size: 0.95rem;
         }
 
-        .header-title h1 { font-size: 1.2rem; }
-        .header-title p { font-size: 0.75rem; opacity: 0.85; }
+        /* شاشة القائمة (Menu Screen - مشابهة لصورة 1730.jpg) */
+        .menu-profile-card {
+            display: flex; align-items: center; justify-content: space-between; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--border); cursor: pointer;
+        }
+        .menu-profile-info { display: flex; align-items: center; gap: 12px; }
+        .menu-profile-info img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        
+        .menu-section-title { font-size: 0.8rem; color: var(--text-muted); padding: 15px 16px 5px; font-weight: bold; }
+        .menu-item {
+            display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; transition: background 0.2s;
+        }
+        .menu-item:hover { background: var(--chat-bg); }
+        .menu-item-left { display: flex; align-items: center; gap: 15px; font-size: 0.95rem; }
+        .menu-item-left i { font-size: 1.2rem; color: var(--primary); width: 24px; text-align: center; }
 
-        .header-actions { display: flex; gap: 10px; }
-        .icon-btn { background: rgba(255,255,255,0.2); border: none; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .icon-btn:hover { background: rgba(255,255,255,0.3); }
+        /* شاشة الإشعارات (Notifications Screen - مشابهة لصورة 1729.jpg) */
+        .notif-item {
+            display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border);
+        }
+        .notif-left { display: flex; align-items: center; gap: 12px; }
+        .notif-left img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
 
-        .app-body { padding: 15px; overflow-y: auto; flex: 1; }
+        /* شاشة القصص (Stories Screen - مشابهة لصورة 1728.jpg) */
+        .stories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        .story-card {
+            height: 220px; border-radius: 12px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; cursor: pointer;
+            background-size: cover; background-position: center; border: 1px solid var(--border);
+        }
+        .story-card::before { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); z-index: 1; }
+        .story-card * { position: relative; z-index: 2; color: #fff; }
 
-        .section-box {
-            background: var(--chat-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 15px;
-            margin-bottom: 12px;
+        /* شريط التنقل السفلي (Bottom Navigation) */
+        .bottom-nav {
+            display: flex; background: var(--card-bg); border-top: 1px solid var(--border); height: 60px; justify-content: space-around; align-items: center; z-index: 20;
+        }
+        .nav-tab-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.75rem; flex: 1;
+        }
+        .nav-tab-btn.active { color: var(--primary); font-weight: bold; }
+        .nav-tab-btn i { font-size: 1.2rem; }
+
+        /* شاشة الاتصال المرئي الكاملة */
+        #callScreen {
+            display: none; flex-direction: column; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; padding: 15px; color: #fff;
+        }
+        .media-grid { display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 10px; flex: 1; border-radius: 12px; overflow: hidden; position: relative; }
+        .media-grid video { width: 100%; height: 100%; object-fit: cover; background: #222; border-radius: 10px; }
+
+        /* نافذة الاتصال الوارد المنبثقة على واجهة الهاتف */
+        #incomingModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200;
+            justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px; color: #fff;
         }
 
-        .section-box h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-
-        .id-display {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            border-radius: 8px;
+        /* نافذة تعديل الحساب (الملف الشخصي) */
+        #profileModal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 150;
+            justify-content: center; align-items: center; padding: 20px;
         }
+        .modal-card { background: var(--card-bg); width: 100%; max-width: 380px; border-radius: 15px; padding: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 15px; }
 
-        #myNumber { font-family: monospace; font-size: 1.2rem; color: var(--success); font-weight: bold; letter-spacing: 2px; }
-
-        .input-row { display: flex; gap: 8px; margin-top: 6px; }
-        input[type="text"], select {
-            flex: 1;
-            padding: 10px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 1rem;
-            outline: none;
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 0.9rem;
-        }
+        .btn-ios { padding: 10px 16px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9rem; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--primary-hover); }
         .btn-danger { background: var(--danger); color: white; }
         .btn-success { background: var(--success); color: white; }
-        .btn-warning { background: var(--warning); color: white; }
-
-        /* التبويبات السفلية الرئيسية */
-        .nav-tabs {
-            display: flex;
-            background: var(--chat-bg);
-            border-top: 1px solid var(--border);
-            padding: 8px;
-            justify-content: space-around;
-        }
-        .tab-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 3px; }
-        .tab-btn.active { color: var(--primary); font-weight: bold; }
-
-        /* الشاشات الفرعية */
-        .screen { display: none; }
-        .screen.active { display: block; }
-
-        /* شاشة المكالمة ونظام الفيديو والشات المدمج */
-        #callScreen { display: none; flex-direction: column; height: 100%; position: absolute; top:0; left:0; width:100%; height:100%; background: var(--card-bg); z-index: 50; padding: 15px; }
-        .media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; height: 220px; background: #000; border-radius: 10px; overflow: hidden; position: relative; }
-        .media-grid video { width: 100%; height: 100%; object-fit: cover; background: #222; }
-        .media-grid video.filtered-grayscale { filter: grayscale(100%); }
-        .media-grid video.filtered-sepia { filter: sepia(100%); }
-        .media-grid video.filtered-invert { filter: invert(100%); }
-
-        .call-chat-box { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-        .messages-area { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; max-height: 140px; }
-        .msg { padding: 6px 10px; border-radius: 6px; max-width: 80%; font-size: 0.85rem; word-break: break-all; }
-        .msg.incoming { background: var(--bg); align-self: flex-start; border: 1px solid var(--border); }
-        .msg.outgoing { background: var(--primary); color: white; align-self: flex-end; }
-
-        .chat-input-row { display: flex; padding: 8px; gap: 6px; border-top: 1px solid var(--border); background: var(--card-bg); }
-        .chat-input-row input { flex: 1; padding: 6px 10px; font-size: 0.85rem; }
-
-        /* نافذة الاتصال الوارد */
-        #incomingModal {
-            display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 100;
-            justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px;
-        }
-
-        .list-item { background: var(--bg); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.9rem; }
         
-        /* مؤشر حالة الاتصال */
-        .status-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; }
+        input[type="text"] { width: 100%; padding: 10px 14px; background: var(--chat-bg); border: 1px solid var(--border); border-radius: 10px; color: var(--text); outline: none; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <!-- الرأس -->
-        <div class="app-header">
-            <div class="header-title">
-                <h1><i class="fa-solid fa-satellite-dish"></i> شبكة الاتصال السيادية</h1>
-                <p>مكالمات صوت, فيديو, شاشة, شات وملفات P2P مباشرة</p>
-            </div>
-            <div class="header-actions">
-                <button class="icon-btn" onclick="toggleTheme()" title="تغيير المظهر"><i class="fa-solid fa-circle-half-stroke" id="themeIcon"></i></button>
+    <div class="phone-frame">
+        
+        <!-- رأس التطبيق الثابت -->
+        <div class="messenger-header" id="mainHeader">
+            <div class="messenger-title" id="headerTitleText">الدردشات</div>
+            <div class="header-icons">
+                <button class="circle-icon-btn" onclick="openProfileModal()" title="تعديل الحساب"><i class="fa-solid fa-user-pen"></i></button>
+                <button class="circle-icon-btn" onclick="toggleTheme()" title="تغيير المظهر"><i class="fa-solid fa-circle-half-stroke" id="themeIcon"></i></button>
             </div>
         </div>
 
-        <!-- المحتوى الداخلي المتنقل عبر التبويبات -->
+        <!-- شريط البحث (يظهر في الدردشات) -->
+        <div class="search-container" id="searchBarContainer">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="بحث في المراسلات أو الأصدقاء..." onkeyup="filterChats(this.value)">
+            </div>
+        </div>
+
+        <!-- محتوى الشاشات المتعددة -->
         <div class="app-body">
             
-            <!-- 1. شاشة الاتصال الرئيسية -->
-            <div id="tab-home" class="screen active">
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-id-card"></i> رقمك الافتراضي (5 خانات)</h3>
-                    <div class="id-display">
-                        <span id="myNumber">جاري التوليد...</span>
-                        <button class="icon-btn" onclick="copyId()" style="background:var(--primary); width:30px; height:30px;"><i class="fa-solid fa-copy"></i></button>
+            <!-- 1. شاشة الدردشات (Chats Screen) -->
+            <div id="tab-chats" class="screen active">
+                <div class="stories-bar" id="storiesBar">
+                    <div class="story-item" onclick="addNewStoryPrompt()">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde" class="story-avatar" id="myStoryAvatar" alt="قصتي">
+                        <span style="font-weight:bold;">قصتك +</span>
+                    </div>
+                    <!-- قصص الأصدقاء -->
+                    <div class="story-item"><img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61" class="story-avatar"><span>أحمد</span></div>
+                    <div class="story-item"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330" class="story-avatar"><span>سارة</span></div>
+                    <div class="story-item"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d" class="story-avatar"><span>محمد</span></div>
+                </div>
+
+                <div id="chatsListContainer">
+                    <!-- قائمة المحادثات النشطة -->
+                    <div class="chat-list-item" onclick="openChatRoom('أحمد علي', 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61', '54821')">
+                        <div class="chat-avatar-wrap">
+                            <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61">
+                            <span class="online-badge"></span>
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-username">أحمد علي</div>
+                            <div class="chat-lastmsg">هل تم انهاء كود البرمجة بنجاح؟</div>
+                        </div>
+                    </div>
+                    <div class="chat-list-item" onclick="openChatRoom('سارة العبداللات', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', '89102')">
+                        <div class="chat-avatar-wrap">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330">
+                            <span class="online-badge"></span>
+                        </div>
+                        <div class="chat-info">
+                            <div class="chat-username">سارة العبداللات</div>
+                            <div class="chat-lastmsg">تم إرسال الصورة بنجاح.</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-phone"></i> اتصال سريع برقم</h3>
-                    <div class="input-row">
-                        <input type="text" id="targetInput" maxlength="5" placeholder="أدخل 5 أرقام...">
-                        <button class="btn btn-primary" onclick="makeCall()"><i class="fa-solid fa-video"></i> اتصال</button>
-                    </div>
-                </div>
-
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-users"></i> الغرف الجماعية (Conference)</h3>
-                    <div class="input-row">
-                        <input type="text" id="roomInput" placeholder="رقم الغرفة المشتركة...">
-                        <button class="btn btn-success" onclick="joinRoom()"><i class="fa-solid fa-door-open"></i> انضمام</button>
-                    </div>
-                </div>
-
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-circle-dot"></i> حالة الشبكة</h3>
-                    <div style="font-size: 0.85rem; display: flex; align-items: center; gap: 8px;">
-                        <span class="status-dot"></span> <span id="networkStatus">متصل ومتاح للجميع (Online)</span>
+                <!-- قسم الاتصال المباشر برقم P2P في الأسفل -->
+                <div style="padding: 15px; margin-top: auto; border-top: 1px solid var(--border); background: var(--card-bg);">
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">رقمك الافتراضي للاتصال: <strong id="myVirtualId" style="color:var(--primary); font-family:monospace;">-----</strong></div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="targetPeerIdInput" maxlength="5" placeholder="أدخل 5 أرقام للاتصال..." style="font-size:0.9rem;">
+                        <button class="btn-ios btn-primary" onclick="startDirectCall()"><i class="fa-solid fa-video"></i> اتصال</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. شاشة جهات الاتصال والتسمية -->
-            <div id="tab-contacts" class="screen">
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-address-book"></i> دفتر الأرقام والأسماء المخصصة</h3>
-                    <div class="input-row" style="margin-bottom: 10px;">
-                        <input type="text" id="contactNum" maxlength="5" placeholder="الرقم (5 خانات)">
-                        <input type="text" id="contactName" placeholder="الاسم المستعار (مثال: أحمد)">
-                        <button class="btn btn-primary" onclick="saveContactCustom()">حفظ</button>
+            <!-- 2. شاشة القصص (Stories Screen - مشابهة لصورة 1728) -->
+            <div id="tab-stories" class="screen">
+                <div style="padding: 15px; font-weight: bold; font-size: 1.2rem;">القصص والحالات</div>
+                <div class="stories-grid">
+                    <div class="story-card" style="background-image: url('https://images.unsplash.com/photo-1534447677768-be436bb09401');">
+                        <div style="font-size: 0.9rem; font-weight: bold;">إضافة إلى القصة +</div>
                     </div>
-                    <div id="contactsList"></div>
+                    <div class="story-card" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23');">
+                        <div style="font-size: 0.9rem;">الأستاذ يزيد</div>
+                    </div>
+                    <div class="story-card" style="background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb');">
+                        <div style="font-size: 0.9rem;">ام صالح</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 3. شاشة السجلات -->
-            <div id="tab-logs" class="screen">
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-clock-rotate-left"></i> سجل المكالمات والنشاطات</h3>
-                    <div id="logsList" style="max-height: 250px; overflow-y: auto;"></div>
+            <!-- 3. شاشة الإشعارات (Notifications Screen - مشابهة لصورة 1729) -->
+            <div id="tab-notifications" class="screen">
+                <div style="padding: 15px; font-weight: bold; font-size: 1.2rem;">الإشعارات والطلبات</div>
+                <div id="notificationsContainer">
+                    <div class="notif-item">
+                        <div class="notif-left">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.95rem;">نور الدين عبد ربه</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">أرسل إليك طلب صداقة.</div>
+                            </div>
+                        </div>
+                        <button class="btn-ios btn-primary" style="padding: 6px 12px; font-size:0.8rem;">قبول</button>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-left">
+                            <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.95rem;">Faris Eraq</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">أشخاص قد تعرفهم</div>
+                            </div>
+                        </div>
+                        <button class="btn-ios btn-primary" style="padding: 6px 12px; font-size:0.8rem;">إضافة صديق</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- 4. شاشة الإعدادات والنغمات -->
-            <div id="tab-settings" class="screen">
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-bell"></i> اختر نغمة الرنين (10 نغمات)</h3>
-                    <select id="ringtoneSelect" onchange="saveSettings()">
-                        <option value="1">النغمة الرقمية الكلاسيكية</option>
-                        <option value="2">رنين الهاتف الأرضي القديم</option>
-                        <option value="3">نبضات إلكترونية هادئة</option>
-                        <option value="4">تنبيه فضائي مستقبلي</option>
-                        <option value="5">صفير ناعم متقطع</option>
-                        <option value="6">رنين ماريمبا خفيف</option>
-                        <option value="7">موسيقى تنبيه سريعة</option>
-                        <option value="8">رنين طوارئ خفيف</option>
-                        <option value="9">نغمة جرس متصاعدة</option>
-                        <option value="10">صوت رنين راديو تجريبي</option>
-                    </select>
+            <!-- 4. شاشة القائمة (Menu Screen - مشابهة لصورة 1730) -->
+            <div id="tab-menu" class="screen">
+                <div class="menu-profile-card" onclick="openProfileModal()">
+                    <div class="menu-profile-info">
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde" id="menuProfileImg">
+                        <div>
+                            <div style="font-weight: bold; font-size: 1.05rem;" id="menuProfileName">Taim Abd Rabo</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">عرض وتبديل الملف الشخصي</div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-left" style="color:var(--text-muted);"></i>
                 </div>
-                <div class="section-box">
-                    <h3><i class="fa-solid fa-sliders"></i> خصائص الأداء والبث</h3>
-                    <label style="font-size:0.85rem; display:block; margin-bottom:5px;">جودة الكاميرا والفيديو:</label>
-                    <select id="videoQuality" onchange="saveSettings()" style="margin-bottom: 10px;">
-                        <option value="hd">عالية جداً (HD 720p)</option>
-                        <option value="sd" selected>متوسطة ومستقرة (SD)</option>
-                        <option value="low">منخفضة للإنترنت الضعيف (Low)</option>
-                    </select>
+
+                <div class="menu-section-title">الأدوات والإعدادات</div>
+                <div class="menu-item" onclick="alert('الإعدادات العامة مفعلة وتعمل تلقائياً')">
+                    <div class="menu-item-left"><i class="fa-solid fa-gear"></i> الإعدادات</div>
+                    <i class="fa-solid fa-chevron-left" style="font-size: 0.8rem; color: var(--text-muted);"></i>
+                </div>
+                <div class="menu-item" onclick="switchTab('communities', document.querySelectorAll('.nav-tab-btn')[3])">
+                    <div class="menu-item-left"><i class="fa-solid fa-users-rectangle"></i> المجتمعات</div>
+                    <span style="background:var(--primary); color:#fff; font-size:0.7rem; padding:2px 6px; border-radius:10px;">جديد</span>
+                </div>
+                <div class="menu-item" onclick="alert('لا توجد طلبات مراسلة جديدة')">
+                    <div class="menu-item-left"><i class="fa-solid fa-message"></i> طلبات المراسلة</div>
+                </div>
+                <div class="menu-item" onclick="alert('الأرشيف فارغ حالياً')">
+                    <div class="menu-item-left"><i class="fa-solid fa-box-archive"></i> الأرشيف</div>
+                </div>
+
+                <div class="menu-section-title">الأصدقاء والتواصل</div>
+                <div class="menu-item" onclick="switchTab('notifications', document.querySelectorAll('.nav-tab-btn')[1])">
+                    <div class="menu-item-left"><i class="fa-solid fa-user-plus"></i> طلبات الصداقة</div>
+                </div>
+                <div class="menu-item" onclick="alert('تم تفعيل الأصدقاء المقربون')">
+                    <div class="menu-item-left"><i class="fa-solid fa-star"></i> الأصدقاء المقربون</div>
+                </div>
+            </div>
+
+            <!-- شاشة فرعية للمجتمعات (Communities) -->
+            <div id="tab-communities" class="screen">
+                <div style="padding: 15px; font-weight: bold; font-size: 1.2rem;">المجتمعات والمجموعات البرمجية</div>
+                <div class="chat-list-item" onclick="openChatRoom('مسابقة يوتيوب / برمجة', 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe', '99999')">
+                    <div class="chat-avatar-wrap"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe"></div>
+                    <div class="chat-info">
+                        <div class="chat-username">مسابقة يوتيوب / برمجة 💻</div>
+                        <div class="chat-lastmsg">لقد غادر Zaid Odai Khalaf المجموعة.</div>
+                    </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- أزرار التنقل السفلية -->
-        <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('home', this)"><i class="fa-solid fa-house"></i> الرئيسية</button>
-            <button class="tab-btn" onclick="switchTab('contacts', this)"><i class="fa-solid fa-address-book"></i> الأسماء</button>
-            <button class="tab-btn" onclick="switchTab('logs', this)"><i class="fa-solid fa-clock-rotate-left"></i> السجل</button>
-            <button class="tab-btn" onclick="switchTab('settings', this)"><i class="fa-solid fa-gear"></i> الإعدادات</button>
-        </div>
-
-        <!-- شاشة المكالمة المرئية والنشطة والشات -->
-        <div id="callScreen">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span id="callPartnerTitle" style="font-weight: bold; font-family: monospace; color: var(--success);">مكالمة جارية...</span>
-                <span id="callTimer" style="font-family: monospace;">00:00</span>
-            </div>
-
-            <!-- مربعات الفيديو والفلتر -->
-            <div class="media-grid">
-                <video id="remoteVideo" autoplay playsinline></video>
-                <video id="localVideo" autoplay playsinline muted></video>
-            </div>
-
-            <!-- خيارات تعديل الصوت والفلاتر أثناء المكالمة -->
-            <div style="display: flex; gap: 5px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px;">
-                <select id="cameraFilter" onchange="applyFilter(this.value)" style="font-size:0.75rem; padding:5px;">
-                    <option value="none">بدون فلتر</option>
-                    <option value="grayscale">أبيض وأسود</option>
-                    <option value="sepia">نمط قديم (Sepia)</option>
-                    <option value="invert">عكس الألوان (Invert)</option>
-                </select>
-                <button class="btn btn-warning" onclick="toggleScreenShare()" style="font-size:0.75rem; padding:5px 8px;"><i class="fa-solid fa-desktop"></i> الشاشة</button>
-                <button class="btn btn-primary" onclick="switchCamera()" style="font-size:0.75rem; padding:5px 8px;"><i class="fa-solid fa-camera-rotate"></i> قلب</button>
-            </div>
-
-            <!-- صندوق الشات وإرسال الملفات والرسائل الصوتية -->
-            <div class="call-chat-box">
-                <div class="messages-area" id="messagesArea"></div>
-                <div class="chat-input-row">
-                    <input type="text" id="chatInput" placeholder="اكتب رسالة أو أرسل صورة..." onkeypress="checkEnter(event)">
-                    <label class="icon-btn" style="background:var(--primary); cursor:pointer; width:35px; height:35px;" title="إرسال ملف/صورة">
-                        <i class="fa-solid fa-paperclip"></i>
-                        <input type="file" id="fileInput" style="display:none;" onchange="sendFile(this)">
-                    </label>
-                    <button class="btn btn-primary" onclick="sendTextMessage()" style="padding: 6px 10px;"><i class="fa-solid fa-paper-plane"></i></button>
+        <!-- شاشة المحادثة الداخلية الخاصة بالدردشة والملفات -->
+        <div id="activeChatScreen">
+            <div class="chat-room-header">
+                <div class="chat-room-header-left">
+                    <button class="circle-icon-btn" onclick="closeChatRoom()" style="width:32px; height:32px;"><i class="fa-solid fa-arrow-right"></i></button>
+                    <img id="activeChatAvatar" src="" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;">
+                    <div>
+                        <div id="activeChatName" style="font-weight: 600; font-size: 0.95rem;">اسم المستخدم</div>
+                        <div style="font-size: 0.75rem; color: var(--success);">نشط الآن</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="circle-icon-btn" onclick="startCallFromChat()" style="width:34px; height:34px; color:var(--primary);"><i class="fa-solid fa-video"></i></button>
                 </div>
             </div>
 
-            <!-- أزرار التحكم بالمكالمة -->
-            <div style="display: flex; gap: 8px; justify-content: center; margin-top: 10px;">
-                <button class="btn btn-primary" id="muteAudioBtn" onclick="toggleMuteAudio()"><i class="fa-solid fa-microphone"></i> كتم</button>
-                <button class="btn btn-primary" id="muteVideoBtn" onclick="toggleMuteVideo()"><i class="fa-solid fa-video"></i> فيديو</button>
-                <button class="btn btn-danger" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i> إنهاء</button>
+            <div class="chat-messages-box" id="activeChatMessagesArea">
+                <!-- الرسائل -->
             </div>
+
+            <div class="chat-input-footer">
+                <input type="text" id="activeChatInput" placeholder="اكتب رسالة..." onkeypress="checkChatEnter(event)">
+                <button class="circle-icon-btn" onclick="sendTextMessage()" style="background:var(--primary); color:#fff; width:38px; height:38px;"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <!-- شريط التنقل السفلي (Bottom Nav) -->
+        <div class="bottom-nav">
+            <button class="nav-tab-btn active" onclick="switchTab('chats', this)"><i class="fa-solid fa-comment"></i> الدردشات</button>
+            <button class="nav-tab-btn" onclick="switchTab('notifications', this)"><i class="fa-solid fa-bell"></i> الإشعارات</button>
+            <button class="nav-tab-btn" onclick="switchTab('stories', this)"><i class="fa-solid fa-photo-film"></i> القصص</button>
+            <button class="nav-tab-btn" onclick="switchTab('menu', this)"><i class="fa-solid fa-bars"></i> القائمة</button>
         </div>
 
     </div>
 
-    <!-- نافذة منبثقة للمكالمات الواردة مع إشعارات ونغمات متعددة -->
+    <!-- شاشة الاتصال المرئي الكاملة (Video Call Modal) -->
+    <div id="callScreen">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span id="callPartnerTitle" style="font-weight: bold; color: var(--success);">مكالمة جارية...</span>
+            <button class="btn-ios btn-danger" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i> إنهاء المكالمة</button>
+        </div>
+        <div class="media-grid">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" autoplay playsinline muted></video>
+        </div>
+    </div>
+
+    <!-- نافذة المكالمة الواردة (تظهر على الهاتف كإشعار حقيقي) -->
     <div id="incomingModal">
-        <div style="width: 70px; height: 70px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; margin-bottom: 15px; animation: pulse 1s infinite;">
+        <div style="width: 70px; height: 70px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; margin-bottom: 15px;">
             <i class="fa-solid fa-phone-volume"></i>
         </div>
-        <h2 style="color: #fff; margin-bottom: 5px;">مكالمة واردة جديدة!</h2>
-        <p id="incomingCallerText" style="color: var(--success); font-family: monospace; font-size: 1.3rem; margin-bottom: 20px;"></p>
+        <h2>مكالمة واردة جديدة!</h2>
+        <p id="incomingCallerText" style="color: var(--success); font-family: monospace; font-size: 1.2rem; margin: 15px 0;"></p>
         <div style="display: flex; gap: 15px; width: 80%;">
-            <button class="btn btn-danger" onclick="rejectIncomingCall()" style="flex: 1;"><i class="fa-solid fa-xmark"></i> رفض</button>
-            <button class="btn btn-success" onclick="acceptIncomingCall()" style="flex: 1;"><i class="fa-solid fa-check"></i> رد</button>
+            <button class="btn-ios btn-danger" onclick="rejectCall()" style="flex: 1;"><i class="fa-solid fa-xmark"></i> رفض</button>
+            <button class="btn-ios btn-success" onclick="acceptCall()" style="flex: 1;"><i class="fa-solid fa-check"></i> رد</button>
+        </div>
+    </div>
+
+    <!-- نافذة تعديل الحساب والملف الشخصي -->
+    <div id="profileModal">
+        <div class="modal-card">
+            <h3 style="margin-bottom: 5px;">تعديل الملف الشخصي والحساب</h3>
+            <label style="font-size:0.85rem; color:var(--text-muted);">اسم الحساب:</label>
+            <input type="text" id="editNameInput" placeholder="أدخل اسمك الجديد...">
+            <label style="font-size:0.85rem; color:var(--text-muted);">رابط صورة الحساب (URL):</label>
+            <input type="text" id="editAvatarInput" placeholder="ضع رابط الصورة هنا...">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-ios btn-danger" onclick="closeProfileModal()" style="flex: 1;">إلغاء</button>
+                <button class="btn-ios btn-primary" onclick="saveProfileChanges()" style="flex: 1;">حفظ</button>
+            </div>
         </div>
     </div>
 
     <!-- عنصر الصوت للرنين -->
-    <audio id="audioRingtone" loop></audio>
+    <audio id="audioRingtone" loop src="https://actions.google.com/sounds/v1/alarms/telephone_ring_bell.ogg"></audio>
 
     <script>
         let myId = "";
@@ -357,389 +464,58 @@
         let activeCall = null;
         let incomingCallObj = null;
         let localStream = null;
-        let dataConnection = null;
-        let timerInterval = null;
-        let secondsCount = 0;
-        let isMutedA = false;
-        let isMutedV = false;
-        let isScreenSharing = false;
-        let currentFacingMode = "user";
+        let currentChatPeer = "";
 
-        // استرجاع وحفظ البيانات تلقائياً عبر الـ localStorage
+        // تهيئة النظام وحفظ البيانات تلقائياً (LocalStorage Integration)
         function initApp() {
-            // استرجاع أو توليد رقم 5 خانات دائم للجهاز
-            myId = localStorage.getItem('persistent_myId');
-            if (!myId) {
+            // استرجاع أو إنشاء رقم 5 خانات فريد
+            myId = localStorage.getItem('app_my_id');
+            if(!myId) {
                 myId = Math.floor(10000 + Math.random() * 90000).toString();
-                localStorage.setItem('persistent_myId', myId);
+                localStorage.setItem('app_my_id', myId);
             }
-            document.getElementById('myNumber').innerText = myId;
+            document.getElementById('myVirtualId').innerText = myId;
 
-            // استرجاع إعدادات المظهر والنغمات والجودة المحفوظة
+            // استرجاع المظهر (Theme)
             let savedTheme = localStorage.getItem('app_theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
             document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-circle-half-stroke' : 'fa-solid fa-moon';
 
-            let savedRingtone = localStorage.getItem('app_ringtone');
-            if(savedRingtone) document.getElementById('ringtoneSelect').value = savedRingtone;
+            // استرجاع بيانات الملف الشخصي (الاسم والصورة)
+            let savedName = localStorage.getItem('app_profile_name') || 'Taim Abd Rabo';
+            let savedAvatar = localStorage.getItem('app_profile_avatar') || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde';
+            
+            document.getElementById('menuProfileName').innerText = savedName;
+            document.getElementById('menuProfileImg').src = savedAvatar;
+            document.getElementById('myStoryAvatar').src = savedAvatar;
+            document.getElementById('editNameInput').value = savedName;
+            document.getElementById('editAvatarInput').value = savedAvatar;
 
-            let savedQuality = localStorage.getItem('app_quality');
-            if(savedQuality) document.getElementById('videoQuality').value = savedQuality;
-
+            // بدء تشغيل خدمات PeerJS للاتصال والمراسلة المباشرة
             peer = new Peer("net_call_" + myId);
 
-            peer.on('open', (id) => {
-                console.log("Peer Connected ID:", id);
-            });
-
-            peer.on('error', (err) => {
-                if(err.type === 'unavailable-ID') {
-                    // إذا حدث تداخل نادر، نولد رقماً جديداً ونحفظه
-                    myId = Math.floor(10000 + Math.random() * 90000).toString();
-                    localStorage.setItem('persistent_myId', myId);
-                    location.reload();
-                }
-            });
-
-            // استقبال المكالمات الواردة
             peer.on('call', (call) => {
                 incomingCallObj = call;
-                let realCaller = call.peer.replace("net_call_", "");
-                let displayName = getContactName(realCaller) || realCaller;
-                document.getElementById('incomingCallerText').innerText = "من: " + displayName;
-                
-                playSelectedRingtone();
+                let callerNum = call.peer.replace("net_call_", "");
+                document.getElementById('incomingCallerText').innerText = "المتصل: " + callerNum;
                 document.getElementById('incomingModal').style.display = 'flex';
-                addLog('مكالمة واردة من ' + displayName);
+                document.getElementById('audioRingtone').play().catch(e => console.log(e));
             });
-
-            // استقبال قنوات البيانات (الشات والملفات)
-            peer.on('connection', (conn) => {
-                dataConnection = conn;
-                setupDataConnectionEvents();
-            });
-
-            loadContactsUI();
-            loadLogsUI();
         }
 
-        // حفظ إعدادات النغمة والجودة عند التغيير
-        function saveSettings() {
-            let ringtone = document.getElementById('ringtoneSelect').value;
-            let quality = document.getElementById('videoQuality').value;
-            localStorage.setItem('app_ringtone', ringtone);
-            localStorage.setItem('app_quality', quality);
-        }
-
-        // تبديل الشاشات والتبويبات
+        // تبديل الشاشات التبويبية السفلية
         function switchTab(tabName, btnEl) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            btnEl.classList.add('active');
-        }
-
-        function copyId() {
-            navigator.clipboard.writeText(myId);
-            alert('تم نسخ رقمك الافتراضي بنجاح!');
-        }
-
-        // إدارة النغمات (10 نغمات)
-        const ringtoneUrls = {
-            "1": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-            "2": "https://actions.google.com/sounds/v1/alarms/telephone_ring_bell.ogg",
-            "3": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
-            "4": "https://actions.google.com/sounds/v1/science_fiction/sci_fi_radar.ogg",
-            "5": "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg",
-            "6": "https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg",
-            "7": "https://actions.google.com/sounds/v1/alarms/bugle_call.ogg",
-            "8": "https://actions.google.com/sounds/v1/alarms/critical_alarm.ogg",
-            "9": "https://actions.google.com/sounds/v1/alarms/gentle_alarm.ogg",
-            "10": "https://actions.google.com/sounds/v1/communication/phone_peep_peep.ogg"
-        };
-
-        function playSelectedRingtone() {
-            let choice = document.getElementById('ringtoneSelect').value;
-            let audio = document.getElementById('audioRingtone');
-            audio.src = ringtoneUrls[choice] || ringtoneUrls["1"];
-            audio.play().catch(e => console.log("تفاعل مستخدم مطلوب للرنين"));
-        }
-
-        function stopRingtone() {
-            let audio = document.getElementById('audioRingtone');
-            audio.pause();
-            audio.currentTime = 0;
-        }
-
-        // جودة الفيديو والبث
-        async function getStream() {
-            let quality = document.getElementById('videoQuality').value;
-            let constraints = { audio: true, video: { facingMode: currentFacingMode } };
+            document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
             
-            if (quality === 'hd') {
-                constraints.video.width = { ideal: 1280 };
-                constraints.video.height = { ideal: 720 };
-            } else if (quality === 'low') {
-                constraints.video.width = { ideal: 320 };
-                constraints.video.height = { ideal: 240 };
-            }
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if(btnEl) btnEl.classList.add('active');
 
-            if (!localStream) {
-                localStream = await navigator.mediaDevices.getUserMedia(constraints);
-            }
-            return localStream;
+            // إظهار أو إخفاء شريط البحث حسب التبويب
+            document.getElementById('searchBarContainer').style.display = (tabName === 'chats') ? 'block' : 'none';
         }
 
-        // بدء الاتصال المرئي والصوتي
-        async function makeCall() {
-            let target = document.getElementById('targetInput').value.trim();
-            if(target.length !== 5) {
-                alert('الرجاء إدخال رقم افتراضي صحيح مكون من 5 خانات.');
-                return;
-            }
-            if(target === myId) {
-                alert('لا يمكنك الاتصال برقمك الشخصي.');
-                return;
-            }
-
-            saveContact(target, target);
-            addLog('اتصال صادر إلى ' + target);
-
-            try {
-                let stream = await getStream();
-                document.getElementById('localVideo').srcObject = stream;
-
-                let peerTarget = "net_call_" + target;
-                let call = peer.call(peerTarget, stream);
-                
-                // فتح قناة بيانات للشات والملفات
-                dataConnection = peer.connect(peerTarget);
-                setupDataConnectionEvents();
-
-                setupCallHandlers(call);
-            } catch (err) {
-                alert('فشل تشغيل الكاميرا أو الميكروفون.');
-            }
-        }
-
-        // قبول المكالمة الواردة
-        async function acceptIncomingCall() {
-            stopRingtone();
-            document.getElementById('incomingModal').style.display = 'none';
-
-            let realCaller = incomingCallObj.peer.replace("net_call_", "");
-            saveContact(realCaller, realCaller);
-            addLog('مكالمة واردة مقبولة من ' + realCaller);
-
-            try {
-                let stream = await getStream();
-                document.getElementById('localVideo').srcObject = stream;
-
-                incomingCallObj.answer(stream);
-                setupCallHandlers(incomingCallObj);
-            } catch (err) {
-                alert('تعذر فتح الوسائط.');
-            }
-        }
-
-        function rejectIncomingCall() {
-            stopRingtone();
-            if(incomingCallObj) incomingCallObj.close();
-            document.getElementById('incomingModal').style.display = 'none';
-            incomingCallObj = null;
-        }
-
-        // معالجة تدفق المكالمة
-        function setupCallHandlers(call) {
-            activeCall = call;
-
-            call.on('stream', (remoteStream) => {
-                let remoteVideo = document.getElementById('remoteVideo');
-                remoteVideo.srcObject = remoteStream;
-                remoteVideo.play();
-                showCallScreenUI(call.peer.replace("net_call_", ""));
-            });
-
-            call.on('close', () => {
-                closeCallUI();
-            });
-        }
-
-        function setupDataConnectionEvents() {
-            if(!dataConnection) return;
-            dataConnection.on('data', (data) => {
-                if(data.type === 'text') {
-                    appendMessage(data.content, 'incoming');
-                } else if(data.type === 'file') {
-                    appendFileMessage(data.name, data.content, 'incoming');
-                }
-            });
-        }
-
-        function showCallScreenUI(partnerId) {
-            document.getElementById('callScreen').style.display = 'flex';
-            let name = getContactName(partnerId) || partnerId;
-            document.getElementById('callPartnerTitle').innerText = "مكالمة مع: " + name;
-
-            secondsCount = 0;
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                secondsCount++;
-                let m = Math.floor(secondsCount/60).toString().padStart(2,'0');
-                let s = (secondsCount%60).toString().padStart(2,'0');
-                document.getElementById('callTimer').innerText = `${m}:${s}`;
-            }, 1000);
-        }
-
-        function endCall() {
-            if(activeCall) activeCall.close();
-            if(dataConnection) dataConnection.close();
-            closeCallUI();
-        }
-
-        function closeCallUI() {
-            clearInterval(timerInterval);
-            if(localStream) {
-                localStream.getTracks().forEach(t => t.stop());
-                localStream = null;
-            }
-            document.getElementById('callScreen').style.display = 'none';
-            document.getElementById('messagesArea').innerHTML = '';
-            activeCall = null;
-            dataConnection = null;
-        }
-
-        // الغرف الجماعية (Conference Room)
-        function joinRoom() {
-            let roomId = document.getElementById('roomInput').value.trim();
-            if(!roomId) {
-                alert('الرجاء إدخال اسم أو رقم الغرفة الجماعية.');
-                return;
-            }
-            document.getElementById('targetInput').value = roomId;
-            makeCall();
-        }
-
-        // مشاركة الشاشة (Screen Share)
-        async function toggleScreenShare() {
-            try {
-                if(!isScreenSharing) {
-                    let screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-                    let videoTrack = screenStream.getVideoTracks()[0];
-                    
-                    let sender = activeCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-                    if(sender) sender.replaceTrack(videoTrack);
-
-                    document.getElementById('localVideo').srcObject = screenStream;
-                    isScreenSharing = true;
-
-                    videoTrack.onended = () => {
-                        toggleScreenShare();
-                    };
-                } else {
-                    let stream = await getStream();
-                    let videoTrack = stream.getVideoTracks()[0];
-                    let sender = activeCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-                    if(sender) sender.replaceTrack(videoTrack);
-
-                    document.getElementById('localVideo').srcObject = stream;
-                    isScreenSharing = false;
-                }
-            } catch(e) {
-                console.log("مشاركة الشاشة ملغاة أو غير متاح");
-            }
-        }
-
-        // التبديل بين الكاميرات
-        async function switchCamera() {
-            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-            if(localStream) {
-                localStream.getTracks().forEach(t => t.stop());
-                localStream = null;
-            }
-            let stream = await getStream();
-            document.getElementById('localVideo').srcObject = stream;
-            let videoTrack = stream.getVideoTracks()[0];
-            let sender = activeCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-            if(sender) sender.replaceTrack(videoTrack);
-        }
-
-        // فلاتر الكاميرا
-        function applyFilter(filterName) {
-            let remoteV = document.getElementById('remoteVideo');
-            remoteV.className = "";
-            if(filterName !== 'none') {
-                remoteV.classList.add('filtered-' + filterName);
-            }
-        }
-
-        // الشات وإرسال رسائل وملفات
-        function sendTextMessage() {
-            let txt = document.getElementById('chatInput').value.trim();
-            if(!txt) return;
-
-            appendMessage(txt, 'outgoing');
-            if(dataConnection && dataConnection.open) {
-                dataConnection.send({ type: 'text', content: txt });
-            }
-            document.getElementById('chatInput').value = '';
-        }
-
-        function checkEnter(e) {
-            if(e.key === 'Enter') sendTextMessage();
-        }
-
-        function appendMessage(text, type) {
-            let area = document.getElementById('messagesArea');
-            let div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.innerText = text;
-            area.appendChild(div);
-            area.scrollTop = area.scrollHeight;
-        }
-
-        function sendFile(input) {
-            let file = input.files[0];
-            if(!file) return;
-
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                let fileData = { name: file.name, content: e.target.result };
-                appendFileMessage(file.name, e.target.result, 'outgoing');
-                if(dataConnection && dataConnection.open) {
-                    dataConnection.send({ type: 'file', ...fileData });
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function appendFileMessage(name, dataUrl, type) {
-            let area = document.getElementById('messagesArea');
-            let div = document.createElement('div');
-            div.className = `msg ${type}`;
-            div.innerHTML = `ملف مرفق: <a href="${dataUrl}" download="${name}" style="color:inherit; text-decoration:underline;">${name}</a>`;
-            area.appendChild(div);
-            area.scrollTop = area.scrollHeight;
-        }
-
-        // كتم الميكروفون والصوت
-        function toggleMuteAudio() {
-            if(!localStream) return;
-            isMutedA = !isMutedA;
-            localStream.getAudioTracks()[0].enabled = !isMutedA;
-            let btn = document.getElementById('muteAudioBtn');
-            btn.style.background = isMutedA ? 'var(--danger)' : 'var(--primary)';
-        }
-
-        function toggleMuteVideo() {
-            if(!localStream) return;
-            isMutedV = !isMutedV;
-            localStream.getVideoTracks()[0].enabled = !isMutedV;
-            let btn = document.getElementById('muteVideoBtn');
-            btn.style.background = isMutedV ? 'var(--danger)' : 'var(--primary)';
-        }
-
-        // الوضع الفاتح والداكن مع الحفظ
+        // تبديل الثيم الداكن والفاتح مع الحفظ
         function toggleTheme() {
             let html = document.documentElement;
             let current = html.getAttribute('data-theme');
@@ -749,86 +525,166 @@
             document.getElementById('themeIcon').className = next === 'dark' ? 'fa-solid fa-circle-half-stroke' : 'fa-solid fa-moon';
         }
 
-        // إدارة الأسماء والجهات المحفوظة مع الحفظ التلقائي
-        function saveContactCustom() {
-            let num = document.getElementById('contactNum').value.trim();
-            let name = document.getElementById('contactName').value.trim();
-            if(num.length !== 5 || !name) {
-                alert('الرجاء إدخال رقم من 5 خانات واسم صحيح.');
-                return;
+        // إدارة تعديل الملف الشخصي وحفظه
+        function openProfileModal() { document.getElementById('profileModal').style.display = 'flex'; }
+        function closeProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
+        
+        function saveProfileChanges() {
+            let newName = document.getElementById('editNameInput').value.trim();
+            let newAvatar = document.getElementById('editAvatarInput').value.trim();
+            if(newName) {
+                localStorage.setItem('app_profile_name', newName);
+                document.getElementById('menuProfileName').innerText = newName;
             }
-            saveContact(num, name);
-            document.getElementById('contactNum').value = '';
-            document.getElementById('contactName').value = '';
-            loadContactsUI();
+            if(newAvatar) {
+                localStorage.setItem('app_profile_avatar', newAvatar);
+                document.getElementById('menuProfileImg').src = newAvatar;
+                document.getElementById('myStoryAvatar').src = newAvatar;
+            }
+            closeProfileModal();
+            alert('تم حفظ التعديلات وتحديث الحساب بنجاح!');
         }
 
-        function saveContact(num, name) {
-            let contacts = JSON.parse(localStorage.getItem('my_contacts') || '{}');
-            contacts[num] = name;
-            localStorage.setItem('my_contacts', JSON.stringify(contacts));
-            loadContactsUI();
+        // فتح غرفة محادثة داخلية
+        function openChatRoom(name, avatar, peerCode) {
+            currentChatPeer = peerCode;
+            document.getElementById('activeChatName').innerText = name;
+            document.getElementById('activeChatAvatar').src = avatar;
+            document.getElementById('activeChatScreen').style.display = 'flex';
+            loadChatMessages(peerCode);
         }
 
-        function getContactName(num) {
-            let contacts = JSON.parse(localStorage.getItem('my_contacts') || '{}');
-            return contacts[num] || null;
+        function closeChatRoom() {
+            document.getElementById('activeChatScreen').style.display = 'none';
         }
 
-        function loadContactsUI() {
-            let contacts = JSON.parse(localStorage.getItem('my_contacts') || '{}');
-            let listEl = document.getElementById('contactsList');
-            listEl.innerHTML = '';
+        // إرسال رسالة شات وحفظها في الـ LocalStorage
+        function sendTextMessage() {
+            let input = document.getElementById('activeChatInput');
+            let txt = input.value.trim();
+            if(!txt) return;
+
+            appendMessageUI(txt, 'outgoing');
+            saveMessageToStorage(currentChatPeer, txt, 'outgoing');
+            input.value = '';
+        }
+
+        function checkChatEnter(e) {
+            if(e.key === 'Enter') sendTextMessage();
+        }
+
+        function appendMessageUI(text, type) {
+            let area = document.getElementById('activeChatMessagesArea');
+            let bubble = document.createElement('div');
+            bubble.className = `message-bubble ${type}`;
+            bubble.innerText = text;
+            area.appendChild(bubble);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function saveMessageToStorage(peerCode, text, type) {
+            let history = JSON.parse(localStorage.getItem('chat_' + peerCode) || '[]');
+            history.push({ text, type });
+            localStorage.setItem('chat_' + peerCode, JSON.stringify(history));
+        }
+
+        function loadChatMessages(peerCode) {
+            let area = document.getElementById('activeChatMessagesArea');
+            area.innerHTML = '';
+            let history = JSON.parse(localStorage.getItem('chat_' + peerCode) || '[]');
             
-            let keys = Object.keys(contacts);
-            if(keys.length === 0) {
-                listEl.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:10px;">لا توجد جهات اتصال مسجلة</div>`;
+            if(history.length === 0) {
+                // رسالة ترحيبية افتراضية في الشات
+                appendMessageUI('مرحباً بك! هذه المحادثة مؤمنة ومباشرة.', 'incoming');
+            } else {
+                history.forEach(msg => appendMessageUI(msg.text, msg.type));
+            }
+        }
+
+        // بدء اتصال مرئي مباشر
+        async function startDirectCall() {
+            let target = document.getElementById('targetPeerIdInput').value.trim();
+            if(target.length !== 5 || target === myId) {
+                alert('الرجاء إدخال رقم افتراضي صحيح ومكون من 5 خانات.');
                 return;
             }
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+                
+                let call = peer.call("net_call_" + target, localStream);
+                setupCallHandlers(call);
+            } catch(e) {
+                alert('تعذر الوصول للكاميرا أو الميكروفون.');
+            }
+        }
 
-            keys.forEach(num => {
-                let item = document.createElement('div');
-                item.className = 'list-item';
-                item.innerHTML = `<span><strong>${contacts[num]}</strong> (${num})</span> <button class="btn btn-primary" style="padding:4px 8px; font-size:0.8rem;" onclick="callContact('${num}')"><i class="fa-solid fa-phone"></i></button>`;
-                listEl.appendChild(item);
+        function startCallFromChat() {
+            if(currentChatPeer) {
+                document.getElementById('targetPeerIdInput').value = currentChatPeer;
+                startDirectCall();
+            }
+        }
+
+        function setupCallHandlers(call) {
+            activeCall = call;
+            document.getElementById('callScreen').style.display = 'flex';
+
+            call.on('stream', (remoteStream) => {
+                document.getElementById('remoteVideo').srcObject = remoteStream;
             });
+            call.on('close', () => { endCall(); });
         }
 
-        function callContact(num) {
-            document.getElementById('targetInput').value = num;
-            switchTab('home', document.querySelector('.tab-btn'));
-            makeCall();
+        function acceptCall() {
+            document.getElementById('audioRingtone').pause();
+            document.getElementById('incomingModal').style.display = 'none';
+
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+                localStream = stream;
+                document.getElementById('localVideo').srcObject = stream;
+                incomingCallObj.answer(stream);
+                setupCallHandlers(incomingCallObj);
+            }).catch(e => alert('فشل تشغيل الوسائط.'));
         }
 
-        // سجل المكالمات والنشاطات مع الحفظ الدائم
-        function addLog(text) {
-            let logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
-            let time = new Date().toLocaleTimeString();
-            logs.unshift({ text, time });
-            if(logs.length > 20) logs.pop();
-            localStorage.setItem('my_logs', JSON.stringify(logs));
-            loadLogsUI();
+        function rejectCall() {
+            document.getElementById('audioRingtone').pause();
+            if(incomingCallObj) incomingCallObj.close();
+            document.getElementById('incomingModal').style.display = 'none';
         }
 
-        function loadLogsUI() {
-            let logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
-            let listEl = document.getElementById('logsList');
-            listEl.innerHTML = '';
-            if(logs.length === 0) {
-                listEl.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:10px;">لا توجد سجلات بعد</div>`;
-                return;
+        function endCall() {
+            if(activeCall) activeCall.close();
+            if(localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
             }
-            logs.forEach(log => {
+            document.getElementById('callScreen').style.display = 'none';
+        }
+
+        function addNewStoryPrompt() {
+            let url = prompt("أدخل رابط صورة القصة الجديدة (URL):");
+            if(url) {
+                let bar = document.getElementById('storiesBar');
                 let div = document.createElement('div');
-                div.className = 'list-item';
-                div.innerHTML = `<span>${log.text}</span> <span style="font-size:0.75rem; color:var(--text-muted);">${log.time}</span>`;
-                listEl.appendChild(div);
+                div.className = 'story-item';
+                div.innerHTML = `<img src="${url}" class="story-avatar"><span>قصتي</span>`;
+                bar.appendChild(div);
+                alert('تمت إضافة القصة بنجاح!');
+            }
+        }
+
+        function filterChats(query) {
+            // تصفية المحادثات في القائمة الرئيسية
+            let items = document.querySelectorAll('#chatsListContainer .chat-list-item');
+            items.forEach(item => {
+                let name = item.querySelector('.chat-username').innerText;
+                item.style.display = name.includes(query) ? 'flex' : 'none';
             });
         }
 
-        window.onload = () => {
-            initApp();
-        };
+        window.onload = initApp;
     </script>
 </body>
 </html>
