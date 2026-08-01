@@ -197,7 +197,7 @@
             <!-- 1. شاشة الاتصال الرئيسية -->
             <div id="tab-home" class="screen active">
                 <div class="section-box">
-                    <h3><i class="fa-solid id-card"></i> رقمك الافتراضي (5 خانات)</h3>
+                    <h3><i class="fa-solid fa-id-card"></i> رقمك الافتراضي (5 خانات)</h3>
                     <div class="id-display">
                         <span id="myNumber">جاري التوليد...</span>
                         <button class="icon-btn" onclick="copyId()" style="background:var(--primary); width:30px; height:30px;"><i class="fa-solid fa-copy"></i></button>
@@ -253,7 +253,7 @@
             <div id="tab-settings" class="screen">
                 <div class="section-box">
                     <h3><i class="fa-solid fa-bell"></i> اختر نغمة الرنين (10 نغمات)</h3>
-                    <select id="ringtoneSelect" onchange="changeRingtone()">
+                    <select id="ringtoneSelect" onchange="saveSettings()">
                         <option value="1">النغمة الرقمية الكلاسيكية</option>
                         <option value="2">رنين الهاتف الأرضي القديم</option>
                         <option value="3">نبضات إلكترونية هادئة</option>
@@ -269,7 +269,7 @@
                 <div class="section-box">
                     <h3><i class="fa-solid fa-sliders"></i> خصائص الأداء والبث</h3>
                     <label style="font-size:0.85rem; display:block; margin-bottom:5px;">جودة الكاميرا والفيديو:</label>
-                    <select id="videoQuality" style="margin-bottom: 10px;">
+                    <select id="videoQuality" onchange="saveSettings()" style="margin-bottom: 10px;">
                         <option value="hd">عالية جداً (HD 720p)</option>
                         <option value="sd" selected>متوسطة ومستقرة (SD)</option>
                         <option value="low">منخفضة للإنترنت الضعيف (Low)</option>
@@ -365,10 +365,26 @@
         let isScreenSharing = false;
         let currentFacingMode = "user";
 
-        // توليد رقم 5 خانات عشوائي
+        // استرجاع وحفظ البيانات تلقائياً عبر الـ localStorage
         function initApp() {
-            myId = Math.floor(10000 + Math.random() * 90000).toString();
+            // استرجاع أو توليد رقم 5 خانات دائم للجهاز
+            myId = localStorage.getItem('persistent_myId');
+            if (!myId) {
+                myId = Math.floor(10000 + Math.random() * 90000).toString();
+                localStorage.setItem('persistent_myId', myId);
+            }
             document.getElementById('myNumber').innerText = myId;
+
+            // استرجاع إعدادات المظهر والنغمات والجودة المحفوظة
+            let savedTheme = localStorage.getItem('app_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeIcon').className = savedTheme === 'dark' ? 'fa-solid fa-circle-half-stroke' : 'fa-solid fa-moon';
+
+            let savedRingtone = localStorage.getItem('app_ringtone');
+            if(savedRingtone) document.getElementById('ringtoneSelect').value = savedRingtone;
+
+            let savedQuality = localStorage.getItem('app_quality');
+            if(savedQuality) document.getElementById('videoQuality').value = savedQuality;
 
             peer = new Peer("net_call_" + myId);
 
@@ -378,7 +394,10 @@
 
             peer.on('error', (err) => {
                 if(err.type === 'unavailable-ID') {
-                    initApp(); // إعادة التوليد في حال التداخل النادر
+                    // إذا حدث تداخل نادر، نولد رقماً جديداً ونحفظه
+                    myId = Math.floor(10000 + Math.random() * 90000).toString();
+                    localStorage.setItem('persistent_myId', myId);
+                    location.reload();
                 }
             });
 
@@ -402,6 +421,14 @@
 
             loadContactsUI();
             loadLogsUI();
+        }
+
+        // حفظ إعدادات النغمة والجودة عند التغيير
+        function saveSettings() {
+            let ringtone = document.getElementById('ringtoneSelect').value;
+            let quality = document.getElementById('videoQuality').value;
+            localStorage.setItem('app_ringtone', ringtone);
+            localStorage.setItem('app_quality', quality);
         }
 
         // تبديل الشاشات والتبويبات
@@ -589,7 +616,6 @@
                 alert('الرجاء إدخال اسم أو رقم الغرفة الجماعية.');
                 return;
             }
-            // الاتصال برقم الغرفة الأساسي
             document.getElementById('targetInput').value = roomId;
             makeCall();
         }
@@ -608,7 +634,7 @@
                     isScreenSharing = true;
 
                     videoTrack.onended = () => {
-                        toggleScreenShare(); // العودة للكاميرا العادية عند إيقاف المشاركة
+                        toggleScreenShare();
                     };
                 } else {
                     let stream = await getStream();
@@ -624,7 +650,7 @@
             }
         }
 
-        // التبديل بين الكاميرات (أمامية وخلفية)
+        // التبديل بين الكاميرات
         async function switchCamera() {
             currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
             if(localStream) {
@@ -647,7 +673,7 @@
             }
         }
 
-        // شات وإرسال رسائل وملفات
+        // الشات وإرسال رسائل وملفات
         function sendTextMessage() {
             let txt = document.getElementById('chatInput').value.trim();
             if(!txt) return;
@@ -713,16 +739,17 @@
             btn.style.background = isMutedV ? 'var(--danger)' : 'var(--primary)';
         }
 
-        // الوضع الفاتح والداكن
+        // الوضع الفاتح والداكن مع الحفظ
         function toggleTheme() {
             let html = document.documentElement;
             let current = html.getAttribute('data-theme');
             let next = current === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-theme', next);
+            localStorage.setItem('app_theme', next);
             document.getElementById('themeIcon').className = next === 'dark' ? 'fa-solid fa-circle-half-stroke' : 'fa-solid fa-moon';
         }
 
-        // إدارة الأسماء والجهات المحفوظة
+        // إدارة الأسماء والجهات المحفوظة مع الحفظ التلقائي
         function saveContactCustom() {
             let num = document.getElementById('contactNum').value.trim();
             let name = document.getElementById('contactName').value.trim();
@@ -773,7 +800,7 @@
             makeCall();
         }
 
-        // سجل المكالمات والنشاطات
+        // سجل المكالمات والنشاطات مع الحفظ الدائم
         function addLog(text) {
             let logs = JSON.parse(localStorage.getItem('my_logs') || '[]');
             let time = new Date().toLocaleTimeString();
